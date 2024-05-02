@@ -2,7 +2,6 @@
 area["name:en"="Tokyo"]->.outer;
 area["name:en"="Taito"]->.inner;
 (
-  nwr["shop"="convenience"](area.inner)(area.outer);
-  nwr["shop"="convenience"](area.inner)(area.outer);
+  nwr["amenity"="place_of_worship"]["religion"="buddhist"](area.inner)(area.outer);
 );
 out geom;
