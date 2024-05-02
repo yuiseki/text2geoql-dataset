@@ -1,3 +1,4 @@
+// Important note: Never use "religion"="buddhism". It is wrong. Use "religion"="buddhist" instead.
 [out:json][timeout:30000];
 area["name:en"="Tokyo"]->.outer;
 area["name:en"="Taito"]->.inner;

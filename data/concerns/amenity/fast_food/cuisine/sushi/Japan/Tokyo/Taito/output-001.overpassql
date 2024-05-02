@@ -1,3 +1,4 @@
+// Important note: Sushi shops are fast food, not restaurants!
 [out:json][timeout:30000];
 area["name:en"="Tokyo"]->.outer;
 area["name:en"="Taito"]->.inner;
