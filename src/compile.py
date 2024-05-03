@@ -40,10 +40,7 @@ def collect_text2geoql_files(directory):
 
 
 dir_path = "./data"
-
 collect_text2geoql_files(dir_path)
-
-
 my_dataset = datasets.Dataset.from_list(text2geoql_dict_list)
 
 print(my_dataset)
