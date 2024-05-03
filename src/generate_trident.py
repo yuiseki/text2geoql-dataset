@@ -23,7 +23,6 @@ def add_examples_from_dir(directory):
         for file in files:
             if file == "input-trident.txt":
                 input_txt = open(os.path.join(root, file), "r").read().strip()
-                # get only "Area:"
                 if input_txt.startswith("Area:"):
                     example = {
                         "input": "- "+input_txt,
@@ -40,11 +39,15 @@ example_prompt = PromptTemplate(
 )
 
 prompt_prefix = """\
-You output list of domain-specific language to retrieve information about a specific region.
+You output list of domain-specific language to retrieve information about requested area.
 
 You will always reply according to the following rules:
-- Output MUST be start with Area:.
+- `Area:` is the area specifier.
+- `AreaWithConcern:` is the concern specifier with specific area.
+- All output MUST be start with `- ` and specifier above.
 - Output MUST be multi-line, markdown formatted list.
+- Expand similar DSLs based on your knowledge.
+- MUST NOT repeat the examples.
 
 ===
 Examples:\
@@ -70,7 +73,7 @@ response = ollama.generate(
     # model='phi3:3.8b',
     options={
         'temperature': 0.01,
-        'num_predict': 64,
+        'num_predict': 128,
     })
 
 print(response['response'])
