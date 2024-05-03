@@ -103,13 +103,14 @@ print("")
 
 # overpassql must be greater than 0 lines and less than 20 lines
 if len(overpassql.split("\n")) == 0 or len(overpassql.split("\n")) > 20:
-    print("OverpassQL is not valid")
+    print("OverpassQL is not valid!")
     sys.exit(1)
 
 # if already saved, skip validation and save
 query_hash = hashlib.md5(overpassql.encode('utf-8')).hexdigest()
+print("query_hash:", query_hash)
 if os.path.exists(f"./tmp/{query_hash}"):
-    print("OverpassQL already exists")
+    print("OverpassQL already saved!")
     sys.exit(0)
 
 
