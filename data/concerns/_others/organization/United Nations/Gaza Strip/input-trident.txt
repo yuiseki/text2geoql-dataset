@@ -1,1 +1,1 @@
-AreaWithConcern: Gaza Strip, UN facilities
+AreaWithConcern: Gaza Strip; UN facilities

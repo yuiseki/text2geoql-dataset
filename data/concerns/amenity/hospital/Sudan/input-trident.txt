@@ -1,1 +1,1 @@
-AreaWithConcern: Sudan, Hospitals
+AreaWithConcern: Sudan; Hospitals

@@ -1,1 +1,1 @@
-AreaWithConcern: Taito, Tokyo, Company
+AreaWithConcern: Taito, Tokyo, Japan; Company
