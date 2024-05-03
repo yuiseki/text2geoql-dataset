@@ -25,7 +25,7 @@ def add_examples_from_dir(directory):
                 input_txt = open(os.path.join(root, file), "r").read().strip()
                 if input_txt.startswith("Area:"):
                     example = {
-                        "input": "- "+input_txt,
+                        "input": input_txt,
                     }
                     example_selector.add_example(example)
 
@@ -35,7 +35,7 @@ add_examples_from_dir(dir_path)
 
 example_prompt = PromptTemplate(
     input_variables=["input"],
-    template="{input}",
+    template="Output:\n{input}",
 )
 
 prompt_prefix = """\
@@ -44,7 +44,7 @@ You output list of domain-specific language to retrieve information about reques
 You will always reply according to the following rules:
 - `Area:` is the area specifier.
 - `AreaWithConcern:` is the concern specifier with specific area.
-- All output MUST be start with `- ` and specifier above.
+- All output MUST be start with specifier above.
 - Output MUST be multi-line, markdown formatted list.
 - Expand similar DSLs based on your knowledge.
 - MUST NOT repeat the examples.
