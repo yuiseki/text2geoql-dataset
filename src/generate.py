@@ -12,6 +12,7 @@ from langchain_community.example_selectors.ngram_overlap import (
 
 embeddings = OllamaEmbeddings(
     model="all-minilm:l6-v2",
+    # model="nomic-embed-text:v1.5",
     # model="mxbai-embed-large:v1",
 )
 vectorstore = Chroma("langchain_store", embeddings)
@@ -83,7 +84,8 @@ prompt = prompt_template.format(question=question)
 response = ollama.generate(
     prompt=prompt,
     # model='tinyllama:1.1b',
-    model='phi3:3.8b',
+    model='tinydolphin:1.1b',
+    # model='phi3:3.8b',
     options={
         'temperature': 0.01,
         'num_predict': 128,
