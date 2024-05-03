@@ -1,11 +1,11 @@
 import os
 
 overpassql = """\
-// Important note: SubArea: Japan/Tokyo
+// Important note: SubArea: Japan
 [out:json][timeout:30000];
-area["name:en"="Tokyo"]->.searchArea;
+area["name:en"="Japan"]->.searchArea;
 (
-  relation["boundary"="administrative"]["admin_level"=7](area.searchArea);
+  relation["boundary"="administrative"]["admin_level"=4](area.searchArea);
 );
 out meta;\
 """
@@ -39,7 +39,7 @@ new_trident_string = ", ".join(
 
 print("new_trident_string:", new_trident_string)
 
-exit(0)
+# exit(0)
 
 area_names = []
 
