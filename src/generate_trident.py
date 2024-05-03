@@ -28,6 +28,8 @@ seed_concerns = []
 
 for example in examples:
     input_txt = example["input"]
+    if input_txt.startswith("SubArea:"):
+        continue
     if input_txt.startswith("Area:"):
         if ";" in input_txt:
             continue

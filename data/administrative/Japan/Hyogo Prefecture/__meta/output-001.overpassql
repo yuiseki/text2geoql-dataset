@@ -1,3 +1,4 @@
+// Important note: SubArea: Japan/Hyogo Prefecture
 [out:json][timeout:30000];
 area["name:en"="Hyogo Prefecture"]->.searchArea;
 (

@@ -1,3 +1,4 @@
+// Important note: SubArea: South Korea
 [out:json][timeout:30000];
 area["name:en"="South Korea"]->.searchArea;
 (

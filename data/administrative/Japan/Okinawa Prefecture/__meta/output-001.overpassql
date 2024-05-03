@@ -1,3 +1,4 @@
+// Important note: SubArea: Japan/Okinawa Prefecture
 [out:json][timeout:30000];
 area["name:en"="Okinawa Prefecture"]->.searchArea;
 (
