@@ -117,7 +117,7 @@ def get_number_of_elements(query):
         'data': query
     }
     overpass_api_endpoint = "https://z.overpass-api.de/api/interpreter"
-    response = httpx.get(overpass_api_endpoint, params=params)
+    response = httpx.get(overpass_api_endpoint, params=params, timeout=None)
     response_json = response.json()
 
     number_of_elements = len(response_json['elements'])
