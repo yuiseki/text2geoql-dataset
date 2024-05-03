@@ -6,10 +6,6 @@ from langchain_chroma import Chroma
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.example_selectors.ngram_overlap import (
-    ngram_overlap_score,
-    NGramOverlapExampleSelector,
-)
 
 embeddings = OllamaEmbeddings(
     model="all-minilm:l6-v2",
@@ -61,7 +57,7 @@ You will always reply according to the following rules:
 - Take utmost care with the Important note.
 
 ===
-Examples:
+Examples:\
 """
 
 
