@@ -1,3 +1,4 @@
+import hashlib
 import os
 import sys
 import ollama
@@ -77,18 +78,66 @@ prompt_template = FewShotPromptTemplate(
     input_variables=["question"],
 )
 
-arg = sys.argv[1]
-question = f"{arg}"
+instruct = sys.argv[1]
+question = f"{instruct}"
 prompt = prompt_template.format(question=question)
 
 response = ollama.generate(
     prompt=prompt,
-    # model='tinyllama:1.1b',
     model='tinydolphin:1.1b',
+    # model='tinyllama:1.1b',
     # model='phi3:3.8b',
     options={
         'temperature': 0.01,
         'num_predict': 128,
     })
 
-print(response['response'])
+# extract the OverpassQL from the response
+overpassql = response['response'].split("```")[1].strip()
+
+print("Generated OverpassQL:")
+print("===")
+print(overpassql)
+print("===")
+print("")
+
+# overpassql must be greater than 0 lines and less than 20 lines
+if len(overpassql.split("\n")) == 0 or len(overpassql.split("\n")) > 20:
+    print("OverpassQL is not valid")
+    sys.exit(1)
+
+# if already saved, skip validation and save
+query_hash = hashlib.md5(overpassql.encode('utf-8')).hexdigest()
+if os.path.exists(f"./tmp/{query_hash}"):
+    print("OverpassQL already exists")
+    sys.exit(0)
+
+
+def get_number_of_elements(query):
+    import httpx
+
+    params = {
+        'data': query
+    }
+    overpass_api_endpoint = "https://z.overpass-api.de/api/interpreter"
+    response = httpx.get(overpass_api_endpoint, params=params)
+    response_json = response.json()
+
+    number_of_elements = len(response_json['elements'])
+    return number_of_elements
+
+
+number_of_elements = get_number_of_elements(overpassql)
+
+print("number of elements:", number_of_elements)
+
+
+if 0 < number_of_elements:
+    # mkdir ./tmp/{query_hash}/
+    os.makedirs(f"./tmp/{query_hash}", exist_ok=True)
+    # output the OverpassQL to a file to ./tmp
+    with open(f"./tmp/{query_hash}/output-001.overpassql", 'w') as f:
+        f.write(overpassql+"\n")
+    # output the instruct to a file to ./tmp
+    with open(f"./tmp/{query_hash}/input-trident.txt", 'w') as f:
+        f.write(instruct+"\n")
