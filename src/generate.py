@@ -12,12 +12,13 @@ from langchain_community.example_selectors.ngram_overlap import (
 
 embeddings = OllamaEmbeddings(
     model="all-minilm:l6-v2",
+    # model="mxbai-embed-large:v1",
 )
 vectorstore = Chroma("langchain_store", embeddings)
 
 example_selector = SemanticSimilarityExampleSelector(
     vectorstore=vectorstore,
-    k=4,
+    k=6,
 )
 
 
@@ -54,6 +55,8 @@ You will always reply according to the following rules:
 - The query will search nwr as needed.
 - The query MUST be out geom.
 - The query MUST be enclosed by three backticks on new lines, denoting that it is a code block.
+- Respect examples with the utmost precision.
+- Take utmost care with the Important note.
 
 ===
 Examples:
@@ -74,14 +77,16 @@ prompt_template = FewShotPromptTemplate(
 )
 
 arg = sys.argv[1]
-question = f"AreaWithConcern: {arg}"
+question = f"{arg}"
 prompt = prompt_template.format(question=question)
 
-response = ollama.generate(model='phi3:3.8b',
-                           prompt=prompt,
-                           options={
-                               'temperature': 0.01,
-                               'num_predict': 256,
-                           })
+response = ollama.generate(
+    prompt=prompt,
+    # model='tinyllama:1.1b',
+    model='phi3:3.8b',
+    options={
+        'temperature': 0.01,
+        'num_predict': 128,
+    })
 
 print(response['response'])
