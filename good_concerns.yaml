@@ -6,6 +6,7 @@ Convenience stores: data/concerns/shop/convenience
 Museums: data/concerns/tourism/museum
 Galleries: data/concerns/tourism/gallery
 Zoos: data/concerns/tourism/zoo
+Aquariums: data/concerns/tourism/aquarium
 Parks: data/concerns/leisure/park
 Theme parks: data/concerns/tourism/theme_park
 Castles: data/concerns/historic/castle
