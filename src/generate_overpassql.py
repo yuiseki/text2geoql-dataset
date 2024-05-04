@@ -26,16 +26,19 @@ print("instruct:", instruct)
 filter_type = instruct.split(":")[0].strip()
 print("filter_type:", filter_type)
 
+filter_concern = instruct.split("; ")[-1].strip()
+print("filter_concern:", filter_concern)
+
 embeddings = OllamaEmbeddings(
-    # model="all-minilm:l6-v2",
-    model="nomic-embed-text:v1.5",
+    model="all-minilm:l6-v2",
+    # model="nomic-embed-text:v1.5",
     # model="mxbai-embed-large:v1",
 )
 vectorstore = Chroma("langchain_store", embeddings)
 
 example_selector = SemanticSimilarityExampleSelector(
     vectorstore=vectorstore,
-    k=6,
+    k=4,
 )
 
 
@@ -45,6 +48,8 @@ def add_examples_from_dir(directory):
             if file == "input-trident.txt":
                 input_txt = open(os.path.join(root, file), "r").read().strip()
                 if not input_txt.startswith(filter_type):
+                    continue
+                if not filter_concern in input_txt:
                     continue
                 # search all output-*.overpassql files
                 output_files = [
