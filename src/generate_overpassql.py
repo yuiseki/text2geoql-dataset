@@ -1,3 +1,4 @@
+import time
 import hashlib
 import os
 import sys
@@ -111,7 +112,6 @@ if len(overpassql.split("\n")) == 0 or len(overpassql.split("\n")) > 20:
 
 # if already saved, skip validation and save
 query_hash = hashlib.md5(overpassql.encode('utf-8')).hexdigest()
-print("query_hash:", query_hash)
 if os.path.exists(f"./tmp/{query_hash}"):
     print("OverpassQL already saved!")
     sys.exit(0)
@@ -147,3 +147,8 @@ if 0 < number_of_elements:
         f.write(instruct+"\n")
 
 print(f"./tmp/{query_hash}/output-001.overpassql")
+
+time.sleep(10)
+
+print("")
+print("")
