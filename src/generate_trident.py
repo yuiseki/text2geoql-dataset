@@ -1,7 +1,6 @@
-import random
-import hashlib
 import os
 import sys
+import yaml
 
 examples = []
 
@@ -23,12 +22,25 @@ def add_examples_from_dir(directory):
 dir_path = "./data"
 add_examples_from_dir(dir_path)
 
-seed_areas = []
+# list of dict
+# keys: concern, path
 seed_concerns = []
 
+# read yaml file
+# Key-value pairs of concern word and path to save
+good_concerns_path = "good_concerns.yaml"
+with open(good_concerns_path, "r") as f:
+    good_concerns = yaml.safe_load(f)
+    for concern, path in good_concerns.items():
+        seed_concerns.append({"concern": concern, "base_path": path})
+
+
+seed_areas = []
 for example in examples:
     input_txt = example["input"]
     if input_txt.startswith("SubArea:"):
+        continue
+    if input_txt.startswith("AreaWithConcern:"):
         continue
     if input_txt.startswith("Area:"):
         if ";" in input_txt:
@@ -43,31 +55,33 @@ for example in examples:
         if new_area in seed_areas:
             continue
         seed_areas.append(new_area)
-    elif input_txt.startswith("AreaWithConcern:"):
-        # ;以降のみを取得
-        new_concern = input_txt.split(";")[1].strip()
-        if new_concern == "Izakaya":
-            continue
-        if new_concern in seed_concerns:
-            continue
-        seed_concerns.append(new_concern)
 
 
-# Generate AreaWithConcern from seeds
-area_with_concerns = []
+# Generate AreaWithConcernsAndPath from seeds
+# list of dict
+# keys: area_with_concern, path
+area_with_concerns_and_path = []
 
 for area in seed_areas:
     for concern in seed_concerns:
-        area_with_concern = f"AreaWithConcern: {area}; {concern}"
-        # examplesのinputに含まれている場合はスキップ
+        area_with_concern = f"AreaWithConcern: {area}; {concern['concern']}"
+        # area_with_concernがexamplesのinputに含まれている場合はスキップ
         if area_with_concern in [example["input"] for example in examples]:
             continue
-        area_with_concerns.append(area_with_concern)
+        path = concern["base_path"]
+        area_with_concerns_and_path.append(
+            {"area_with_concern": area_with_concern, "base_path": path})
 
-# Shuffle area_with_concerns
 
-random.seed(42)
-random.shuffle(area_with_concerns)
-
-for area_with_concern in area_with_concerns:
-    print(area_with_concern)
+for item in area_with_concerns_and_path:
+    print(item["area_with_concern"])
+    # save input-trident.txt to item path
+    # item path is base_path + area directory
+    area_names = item["area_with_concern"].split(
+        ";")[0].replace("AreaWithConcern: ", "").split(", ")
+    area_name_reversed = "/".join(reversed(area_names))
+    item_path = os.path.join(item["base_path"], area_name_reversed)
+    print(item_path)
+    os.makedirs(item_path, exist_ok=True)
+    with open(f"{item_path}/input-trident.txt", 'w') as f:
+        f.write(f"{item['area_with_concern']}\n")
