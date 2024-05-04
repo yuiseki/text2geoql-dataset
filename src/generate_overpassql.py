@@ -7,6 +7,18 @@ from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain_community.embeddings import OllamaEmbeddings
 
+instruct = sys.argv[1]
+print("instruct:")
+print("===")
+print(instruct)
+print("===")
+
+target = instruct.split(":")[0].strip()
+print("target:")
+print("===")
+print(target)
+print("===")
+
 embeddings = OllamaEmbeddings(
     model="all-minilm:l6-v2",
     # model="nomic-embed-text:v1.5",
@@ -25,6 +37,8 @@ def add_examples_from_dir(directory):
         for file in files:
             if file == "input-trident.txt":
                 input_txt = open(os.path.join(root, file), "r").read().strip()
+                if not input_txt.startswith(target):
+                    continue
                 # search all output-*.overpassql files
                 output_files = [
                     f for f in files if f.startswith("output-") and f.endswith(".overpassql")
@@ -74,9 +88,13 @@ prompt_template = FewShotPromptTemplate(
     input_variables=["question"],
 )
 
-instruct = sys.argv[1]
 question = f"{instruct}"
 prompt = prompt_template.format(question=question)
+
+print("Generated Prompt:")
+print("===")
+print(prompt)
+print("===")
 
 response = ollama.generate(
     prompt=prompt,
@@ -138,3 +156,5 @@ if 0 < number_of_elements:
     # output the instruct to a file to ./tmp
     with open(f"./tmp/{query_hash}/input-trident.txt", 'w') as f:
         f.write(instruct+"\n")
+
+print(f"./tmp/{query_hash}/output-001.overpassql")

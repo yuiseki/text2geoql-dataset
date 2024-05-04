@@ -1,14 +1,9 @@
 import os
+import sys
 
-overpassql = """\
-// Important note: SubArea: Japan
-[out:json][timeout:30000];
-area["name:en"="Japan"]->.searchArea;
-(
-  relation["boundary"="administrative"]["admin_level"=4](area.searchArea);
-);
-out meta;\
-"""
+overpassql = sys.argv[1]
+
+print(overpassql)
 
 base_dir = "./data/administrative/"
 
@@ -17,8 +12,8 @@ def search_target_dir(query):
     # overpassqlからSubAreaを含む行を取得
     query_lines = query.split('\n')
     area_lines = [line for line in query_lines if 'SubArea' in line]
-    # 空白で区切った末尾を取得
-    area_name_path = area_lines[0].split()[-1]
+    # SubArea: で区切った末尾を取得
+    area_name_path = area_lines[0].split("SubArea: ")[-1]
     # area_name_pathからtarget_dirを探す
     target_dir_path = os.path.join(base_dir, area_name_path)
     # base_dir_pathにディレクトリが存在しない場合、作成
@@ -57,7 +52,11 @@ def get_names_of_elements(query):
     elements = response_json['elements']
     for element in elements:
         if 'tags' in element and 'name:en' in element['tags']:
-            area_names.append(element['tags']['name:en'])
+            if " / " in element['tags']['name:en']:
+                new_name = element['tags']['name:en'].split(" / ")[0]
+            else:
+                new_name = element['tags']['name:en']
+            area_names.append(new_name)
 
 
 get_names_of_elements(overpassql)
