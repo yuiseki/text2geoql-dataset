@@ -33,11 +33,11 @@ for example in examples:
     if input_txt.startswith("Area:"):
         if ";" in input_txt:
             continue
-        # ","が2つ未満の場合はスキップ
-        if input_txt.count(",") < 2:
-            continue
         # Japanのみを取得
-        if "Taito" not in input_txt:
+        if "Japan" not in input_txt:
+            continue
+        # ","が3つ未満の場合はスキップ
+        if input_txt.count(",") < 3:
             continue
         new_area = input_txt.replace("Area: ", "").strip()
         if new_area in seed_areas:

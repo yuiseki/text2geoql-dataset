@@ -1,26 +1,26 @@
 
-Airports
-Train Stations
-Hotels
-Convenience stores
-Museums
-Galleries
-Zoos
-Parks
-Theme parks
-Castles
-Bars
-Cafes
-Burger shops
-Pizza shops
-Sushi shops
-Ramen shops
-Soba noodle shops
-Churches
-Mosques
-Temples
-Shrines
-University campuses
-Hospitals
-Embassies
-Shelters
+Airports: data/concerns/aeroway/aerodrome
+Train Stations: data/concerns/railway/station
+Hotels: data/concerns/tourism/hotel
+Convenience stores: data/concerns/shop/convenience
+Museums: data/concerns/tourism/museum
+Galleries: data/concerns/tourism/gallery
+Zoos: data/concerns/tourism/zoo
+Parks: data/concerns/leisure/park
+Theme parks: data/concerns/tourism/theme_park
+Castles: data/concerns/historic/castle
+Bars: data/concerns/amenity/bar
+Cafes: data/concerns/amenity/cafe
+Burger shops: data/concerns/amenity/fast_food/cuisine/burger
+Pizza shops: data/concerns/amenity/fast_food/cuisine/pizza
+Sushi shops: data/concerns/amenity/fast_food/cuisine/sushi
+Ramen shops: data/concerns/amenity/restaurant/cuisine/ramen
+Soba noodle shops: data/concerns/amenity/restaurant/cuisine/soba
+Churches: data/concerns/building/church
+Mosques: data/concerns/amenity/mosque
+Temples: data/concerns/amenity/place_of_worship/religion/buddhist
+Shrines: data/concerns/amenity/place_of_worship/religion/shinto
+University campuses: data/concerns/amenity/university
+Hospitals: data/concerns/amenity/hospital
+Embassies: data/concerns/office/diplomatic
+Shelters: data/concerns/amenity/shelter
