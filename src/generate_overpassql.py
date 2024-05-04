@@ -8,16 +8,10 @@ from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain_community.embeddings import OllamaEmbeddings
 
 instruct = sys.argv[1]
-print("instruct:")
-print("===")
-print(instruct)
-print("===")
+print("Instruct:", instruct)
 
 command = instruct.split(":")[0].strip()
-print("command:")
-print("===")
-print(command)
-print("===")
+print("Command:", command)
 
 embeddings = OllamaEmbeddings(
     model="all-minilm:l6-v2",

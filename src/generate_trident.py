@@ -46,6 +46,8 @@ for example in examples:
     elif input_txt.startswith("AreaWithConcern:"):
         # ;以降のみを取得
         new_concern = input_txt.split(";")[1].strip()
+        if new_concern == "Izakaya":
+            continue
         if new_concern in seed_concerns:
             continue
         seed_concerns.append(new_concern)
