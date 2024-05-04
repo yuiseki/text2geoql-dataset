@@ -91,11 +91,6 @@ prompt_template = FewShotPromptTemplate(
 question = f"{instruct}"
 prompt = prompt_template.format(question=question)
 
-print("Generated Prompt:")
-print("===")
-print(prompt)
-print("===")
-
 response = ollama.generate(
     prompt=prompt,
     model='tinydolphin:1.1b',

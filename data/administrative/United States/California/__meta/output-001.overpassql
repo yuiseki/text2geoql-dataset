@@ -1,6 +1,6 @@
-// Important note: SubArea: China/Guangdong Province/Shenzhen
+// Important note: SubArea: United States/California
 [out:json][timeout:30000];
-area["name:en"="Shenzhen"]->.searchArea;
+area["name:en"="California"]["admin_level"=4]->.searchArea;
 (
   relation["boundary"="administrative"]["admin_level"=6](area.searchArea);
 );
