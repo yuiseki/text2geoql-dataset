@@ -126,6 +126,14 @@ if len(overpassql.split("\n")) == 0 or len(overpassql.split("\n")) > 20:
     print("OverpassQL is not valid!")
     sys.exit(1)
 
+query_hash = hashlib.md5(overpassql.encode('utf-8')).hexdigest()
+tmp_path = os.path.join('./tmp', query_hash)
+
+# check OverpassQL already exists
+if os.path.exists(os.path.join(tmp_path, "output-001.overpassql")):
+    print("OverpassQL already exists!")
+    sys.exit(0)
+
 
 def get_number_of_elements(query):
     import httpx
@@ -150,9 +158,10 @@ number_of_elements = get_number_of_elements(overpassql)
 
 print("number of elements:", number_of_elements)
 
-
 if 0 < number_of_elements:
-    # mkdir ./tmp/{query_hash}/
+    os.makedirs(tmp_path, exist_ok=True)
+    with open(os.path.join(tmp_path, "output-001.overpassql"), 'w') as f:
+        f.write(overpassql+"\n")
     os.makedirs(base_path, exist_ok=True)
     # output the OverpassQL to a file to ./tmp
     with open(save_path, 'w') as f:
