@@ -36,11 +36,14 @@ for example in examples:
         # ","が2つ未満の場合はスキップ
         if input_txt.count(",") < 2:
             continue
+        # Japanのみを取得
+        if "Japan" not in input_txt:
+            continue
         new_area = input_txt.replace("Area: ", "").strip()
         if new_area in seed_areas:
             continue
         seed_areas.append(new_area)
-    else:
+    elif input_txt.startswith("AreaWithConcern:"):
         # ;以降のみを取得
         new_concern = input_txt.split(";")[1].strip()
         if new_concern in seed_concerns:
