@@ -13,10 +13,10 @@ print("===")
 print(instruct)
 print("===")
 
-target = instruct.split(":")[0].strip()
-print("target:")
+command = instruct.split(":")[0].strip()
+print("command:")
 print("===")
-print(target)
+print(command)
 print("===")
 
 embeddings = OllamaEmbeddings(
@@ -37,7 +37,7 @@ def add_examples_from_dir(directory):
         for file in files:
             if file == "input-trident.txt":
                 input_txt = open(os.path.join(root, file), "r").read().strip()
-                if not input_txt.startswith(target):
+                if not input_txt.startswith(command):
                     continue
                 # search all output-*.overpassql files
                 output_files = [
