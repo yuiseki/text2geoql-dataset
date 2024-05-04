@@ -18,6 +18,10 @@ if os.path.exists(save_path):
     print("OverpassQL already saved!")
     sys.exit(0)
 
+not_found_path = os.path.join(base_path, "not-found.txt")
+if os.path.exists(not_found_path):
+    print("not-found.txt exists!")
+    sys.exit(0)
 
 instruct_file_path = os.path.join(base_path, "input-trident.txt")
 instruct = open(instruct_file_path, "r").read().strip()
@@ -166,6 +170,10 @@ if 0 < number_of_elements:
     # output the OverpassQL to a file to ./tmp
     with open(save_path, 'w') as f:
         f.write(overpassql+"\n")
+else:
+    # save not_found.txt
+    with open(not_found_path, 'w') as f:
+        f.write("")
 
 print(save_path)
 
