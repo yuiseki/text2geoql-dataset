@@ -105,7 +105,7 @@ response = ollama.generate(
     # model='phi3:3.8b',
     options={
         'temperature': 0.01,
-        'num_predict': 128,
+        'num_predict': 256,
     })
 
 # extract the OverpassQL from the response
