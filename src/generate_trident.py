@@ -37,7 +37,7 @@ for example in examples:
         if input_txt.count(",") < 2:
             continue
         # Japanのみを取得
-        if "Japan" not in input_txt:
+        if "Taito" not in input_txt:
             continue
         new_area = input_txt.replace("Area: ", "").strip()
         if new_area in seed_areas:
