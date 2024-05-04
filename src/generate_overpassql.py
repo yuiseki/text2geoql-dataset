@@ -8,11 +8,23 @@ from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain_community.embeddings import OllamaEmbeddings
 
-instruct = sys.argv[1]
-print("Instruct:", instruct)
+base_path = sys.argv[1]
+print("base_path:", base_path)
 
-command = instruct.split(":")[0].strip()
-print("Command:", command)
+# if already saved, skip validation and save
+save_path = os.path.join(base_path, "output-001.overpassql")
+print("save_path:", save_path)
+if os.path.exists(save_path):
+    print("OverpassQL already saved!")
+    sys.exit(0)
+
+
+instruct_file_path = os.path.join(base_path, "input-trident.txt")
+instruct = open(instruct_file_path, "r").read().strip()
+print("instruct:", instruct)
+
+filter_type = instruct.split(":")[0].strip()
+print("filter_type:", filter_type)
 
 embeddings = OllamaEmbeddings(
     model="all-minilm:l6-v2",
@@ -32,7 +44,7 @@ def add_examples_from_dir(directory):
         for file in files:
             if file == "input-trident.txt":
                 input_txt = open(os.path.join(root, file), "r").read().strip()
-                if not input_txt.startswith(command):
+                if not input_txt.startswith(filter_type):
                     continue
                 # search all output-*.overpassql files
                 output_files = [
@@ -103,18 +115,11 @@ print("Generated OverpassQL:")
 print("===")
 print(overpassql)
 print("===")
-print("")
 
 # overpassql must be greater than 0 lines and less than 20 lines
 if len(overpassql.split("\n")) == 0 or len(overpassql.split("\n")) > 20:
     print("OverpassQL is not valid!")
     sys.exit(1)
-
-# if already saved, skip validation and save
-query_hash = hashlib.md5(overpassql.encode('utf-8')).hexdigest()
-if os.path.exists(f"./tmp/{query_hash}"):
-    print("OverpassQL already saved!")
-    sys.exit(0)
 
 
 def get_number_of_elements(query):
@@ -124,11 +129,16 @@ def get_number_of_elements(query):
         'data': query
     }
     overpass_api_endpoint = "https://z.overpass-api.de/api/interpreter"
-    response = httpx.get(overpass_api_endpoint, params=params, timeout=None)
-    response_json = response.json()
+    try:
+        response = httpx.get(overpass_api_endpoint,
+                             params=params, timeout=None)
+        response_json = response.json()
 
-    number_of_elements = len(response_json['elements'])
-    return number_of_elements
+        number_of_elements = len(response_json['elements'])
+        return number_of_elements
+    except Exception as e:
+        print("Error:", e)
+        return 0
 
 
 number_of_elements = get_number_of_elements(overpassql)
@@ -138,15 +148,12 @@ print("number of elements:", number_of_elements)
 
 if 0 < number_of_elements:
     # mkdir ./tmp/{query_hash}/
-    os.makedirs(f"./tmp/{query_hash}", exist_ok=True)
+    os.makedirs(base_path, exist_ok=True)
     # output the OverpassQL to a file to ./tmp
-    with open(f"./tmp/{query_hash}/output-001.overpassql", 'w') as f:
+    with open(save_path, 'w') as f:
         f.write(overpassql+"\n")
-    # output the instruct to a file to ./tmp
-    with open(f"./tmp/{query_hash}/input-trident.txt", 'w') as f:
-        f.write(instruct+"\n")
 
-print(f"./tmp/{query_hash}/output-001.overpassql")
+print(save_path)
 
 time.sleep(10)
 
