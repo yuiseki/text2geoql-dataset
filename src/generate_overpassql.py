@@ -27,8 +27,8 @@ filter_type = instruct.split(":")[0].strip()
 print("filter_type:", filter_type)
 
 embeddings = OllamaEmbeddings(
-    model="all-minilm:l6-v2",
-    # model="nomic-embed-text:v1.5",
+    # model="all-minilm:l6-v2",
+    model="nomic-embed-text:v1.5",
     # model="mxbai-embed-large:v1",
 )
 vectorstore = Chroma("langchain_store", embeddings)
