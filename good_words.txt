@@ -1,0 +1,26 @@
+
+Airports
+Train Stations
+Hotels
+Convenience stores
+Museums
+Galleries
+Zoos
+Parks
+Theme parks
+Castles
+Bars
+Cafes
+Burger shops
+Pizza shops
+Sushi shops
+Ramen shops
+Soba noodle shops
+Churches
+Mosques
+Temples
+Shrines
+University campuses
+Hospitals
+Embassies
+Shelters
