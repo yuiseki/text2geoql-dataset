@@ -10,6 +10,18 @@ hotel:
 convenience:
 	python3 src/find_orphan_trident.py "data/concerns/shop/convenience" | xargs -I{} python3 src/generate_overpassql.py "{}"
 
+park:
+	python3 src/find_orphan_trident.py "data/concerns/leisure/park" | xargs -I{} python3 src/generate_overpassql.py "{}"
+
+cafe:
+	python3 src/find_orphan_trident.py "data/concerns/amenity/cafe" | xargs -I{} python3 src/generate_overpassql.py "{}"
+
+bar:
+	python3 src/find_orphan_trident.py "data/concerns/amenity/bar" | xargs -I{} python3 src/generate_overpassql.py "{}"
+
+hospital:
+	python3 src/find_orphan_trident.py "data/concerns/amenity/hospital" | xargs -I{} python3 src/generate_overpassql.py "{}"
+
 museum:
 	python3 src/find_orphan_trident.py "data/concerns/tourism/museum" | xargs -I{} python3 src/generate_overpassql.py "{}"
 
