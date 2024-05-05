@@ -1,6 +1,6 @@
 [out:json][timeout:30000];
-area["name:en"="Osaka"]->.outer;
-area["name:en"="Nishi Ward"]->.inner;
+area["name:en"="Tokyo"]->.outer;
+area["name:en"="Higashimurayama"]->.inner;
 (
   nwr["building"="church"](area.inner)(area.outer);
 );

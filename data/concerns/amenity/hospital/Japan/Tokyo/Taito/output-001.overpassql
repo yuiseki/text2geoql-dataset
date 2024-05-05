@@ -2,6 +2,6 @@
 area["name:en"="Tokyo"]->.outer;
 area["name:en"="Taito"]->.inner;
 (
-  nwr["amenity"="hospital"](area.outer)(area.inner);
+  nwr["amenity"="hospital"](area.inner)(area.outer);
 );
 out geom;

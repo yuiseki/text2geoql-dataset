@@ -2,6 +2,6 @@
 area["name:en"="Kyoto"]->.outer;
 area["name:en"="Yamashina Ward"]->.inner;
 (
-  nwr["building"="church"](area.outer);
+  nwr["building"="church"](area.inner)(area.outer);
 );
 out geom;
