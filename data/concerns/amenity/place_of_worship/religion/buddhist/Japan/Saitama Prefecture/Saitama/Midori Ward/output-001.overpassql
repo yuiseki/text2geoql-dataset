@@ -1,0 +1,7 @@
+[out:json][timeout:30000];
+area["name:en"="Saitama Prefecture"]->.outer;
+area["name:en"="Midori Ward"]->.inner;
+(
+  nwr["amenity"="place_of_worship"]["religion"="buddhist"](area.inner)(area.outer);
+);
+out geom;
