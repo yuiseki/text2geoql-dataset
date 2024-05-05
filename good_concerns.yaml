@@ -18,7 +18,7 @@ Sushi shops: data/concerns/amenity/fast_food/cuisine/sushi
 Ramen shops: data/concerns/amenity/restaurant/cuisine/ramen
 Soba noodle shops: data/concerns/amenity/restaurant/cuisine/soba
 Churches: data/concerns/building/church
-Mosques: data/concerns/amenity/mosque
+Mosques: data/concerns/amenity/place_of_worship/religion/muslim
 Temples: data/concerns/amenity/place_of_worship/religion/buddhist
 Shrines: data/concerns/amenity/place_of_worship/religion/shinto
 University campuses: data/concerns/amenity/university

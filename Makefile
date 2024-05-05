@@ -18,3 +18,6 @@ gallery:
 
 church:
 	python3 src/find_orphan_trident.py "data/concerns/building/church" | xargs -I{} python3 src/generate_overpassql.py "{}"
+
+mosque:
+	python3 src/find_orphan_trident.py "data/concerns/amenity/place_of_worship/religion/muslim" | xargs -I{} python3 src/generate_overpassql.py "{}"
