@@ -170,12 +170,13 @@ if 0 < number_of_elements:
     # output the OverpassQL to a file to ./tmp
     with open(save_path, 'w') as f:
         f.write(overpassql+"\n")
+    print(save_path)
 else:
     # save not_found.txt
     with open(not_found_path, 'w') as f:
         f.write("")
+    print(not_found_path)
 
-print(save_path)
 
 time.sleep(10)
 
