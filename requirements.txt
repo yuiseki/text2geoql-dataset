@@ -1,0 +1,5 @@
+langchain
+langchain_chroma
+langchain_community
+datasets
+httpx
