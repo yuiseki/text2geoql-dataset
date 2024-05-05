@@ -34,6 +34,9 @@ aquarium:
 temple:
 	python3 src/find_orphan_trident.py "data/concerns/amenity/place_of_worship/religion/buddhist" | xargs -I{} python3 src/generate_overpassql.py "{}"
 
+shrine:
+	python3 src/find_orphan_trident.py "data/concerns/amenity/place_of_worship/religion/shinto" | xargs -I{} python3 src/generate_overpassql.py "{}"
+
 church:
 	python3 src/find_orphan_trident.py "data/concerns/building/church" | xargs -I{} python3 src/generate_overpassql.py "{}"
 
