@@ -16,6 +16,12 @@ museum:
 gallery:
 	python3 src/find_orphan_trident.py "data/concerns/tourism/gallery" | xargs -I{} python3 src/generate_overpassql.py "{}"
 
+aquarium:
+	python3 src/find_orphan_trident.py "data/concerns/tourism/aquarium" | xargs -I{} python3 src/generate_overpassql.py "{}"
+
+temple:
+	python3 src/find_orphan_trident.py "data/concerns/amenity/place_of_worship/religion/buddhist" | xargs -I{} python3 src/generate_overpassql.py "{}"
+
 church:
 	python3 src/find_orphan_trident.py "data/concerns/building/church" | xargs -I{} python3 src/generate_overpassql.py "{}"
 
