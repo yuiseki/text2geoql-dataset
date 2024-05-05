@@ -22,6 +22,9 @@ bar:
 hospital:
 	python3 src/find_orphan_trident.py "data/concerns/amenity/hospital" | xargs -I{} python3 src/generate_overpassql.py "{}"
 
+shelter:
+	python3 src/find_orphan_trident.py "data/concerns/amenity/shelter" | xargs -I{} python3 src/generate_overpassql.py "{}"
+
 museum:
 	python3 src/find_orphan_trident.py "data/concerns/tourism/museum" | xargs -I{} python3 src/generate_overpassql.py "{}"
 
