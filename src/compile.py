@@ -44,3 +44,5 @@ collect_text2geoql_files(dir_path)
 my_dataset = datasets.Dataset.from_list(text2geoql_dict_list)
 
 print(my_dataset)
+
+my_dataset.push_to_hub("yuiseki/text2geoql")
