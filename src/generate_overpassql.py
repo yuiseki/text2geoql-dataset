@@ -8,6 +8,9 @@ from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain_community.embeddings import OllamaEmbeddings
 
+print("")
+print("")
+
 base_path = sys.argv[1]
 print("base_path:", base_path)
 
