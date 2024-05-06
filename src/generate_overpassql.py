@@ -1,12 +1,13 @@
-import time
 import hashlib
 import os
 import sys
+import time
+
 import ollama
 from langchain_chroma import Chroma
+from langchain_community.embeddings import OllamaEmbeddings
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
-from langchain_community.embeddings import OllamaEmbeddings
 
 print("")
 print("")
@@ -36,6 +37,10 @@ print("filter_type:", filter_type)
 filter_concern = instruct.split("; ")[-1].strip()
 print("filter_concern:", filter_concern)
 
+# from "AreaWithConcern: Taito, Tokyo, Japan; Cafes" to extract Taito
+filter_area = instruct.split("; ")[0].split(": ")[-1].split(", ")[0].strip()
+print("filter_area:", filter_area)
+
 embeddings = OllamaEmbeddings(
     model="all-minilm:l6-v2",
     # model="nomic-embed-text:v1.5",
@@ -50,21 +55,24 @@ example_selector = SemanticSimilarityExampleSelector(
 
 
 def add_examples_from_dir(directory):
+    filtered_area_count = 0
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file == "input-trident.txt":
                 input_txt = open(os.path.join(root, file), "r").read().strip()
                 if not input_txt.startswith(filter_type):
                     continue
-                if not filter_concern in input_txt:
+                # filter_areaは2個まで
+                if filter_area in input_txt:
+                    filtered_area_count += 1
+                    if filtered_area_count > 2:
+                        continue
+                if filter_concern not in input_txt:
                     continue
                 # search all output-*.overpassql files
-                output_files = [
-                    f for f in files if f.startswith("output-") and f.endswith(".overpassql")
-                ]
+                output_files = [f for f in files if f.startswith("output-") and f.endswith(".overpassql")]
                 for output_file in output_files:
-                    output_txt = open(os.path.join(
-                        root, output_file), "r").read().strip()
+                    output_txt = open(os.path.join(root, output_file), "r").read().strip()
                     example = {
                         "input": input_txt,
                         "output": output_txt,
@@ -112,16 +120,17 @@ prompt = prompt_template.format(question=question)
 
 response = ollama.generate(
     prompt=prompt,
-    model='tinydolphin:1.1b',
+    model="tinydolphin:1.1b",
     # model='tinyllama:1.1b',
     # model='phi3:3.8b',
     options={
-        'temperature': 0.01,
-        'num_predict': 256,
-    })
+        "temperature": 0.01,
+        "num_predict": 256,
+    },
+)
 
 # extract the OverpassQL from the response
-overpassql = response['response'].split("```")[1].strip()
+overpassql = response["response"].split("```")[1].strip()
 
 print("Generated OverpassQL:")
 print("===")
@@ -133,8 +142,8 @@ if len(overpassql.split("\n")) == 0 or len(overpassql.split("\n")) > 20:
     print("OverpassQL is not valid!")
     sys.exit(1)
 
-query_hash = hashlib.md5(overpassql.encode('utf-8')).hexdigest()
-tmp_path = os.path.join('./tmp', query_hash)
+query_hash = hashlib.md5(overpassql.encode("utf-8")).hexdigest()
+tmp_path = os.path.join("./tmp", query_hash)
 
 # check OverpassQL already exists
 if os.path.exists(os.path.join(tmp_path, "output-001.overpassql")):
@@ -145,16 +154,13 @@ if os.path.exists(os.path.join(tmp_path, "output-001.overpassql")):
 def get_number_of_elements(query):
     import httpx
 
-    params = {
-        'data': query
-    }
+    params = {"data": query}
     overpass_api_endpoint = "https://z.overpass-api.de/api/interpreter"
     try:
-        response = httpx.get(overpass_api_endpoint,
-                             params=params, timeout=None)
+        response = httpx.get(overpass_api_endpoint, params=params, timeout=None)
         response_json = response.json()
 
-        number_of_elements = len(response_json['elements'])
+        number_of_elements = len(response_json["elements"])
         return number_of_elements
     except Exception as e:
         print("Error:", e)
@@ -167,16 +173,16 @@ print("number of elements:", number_of_elements)
 
 if 0 < number_of_elements:
     os.makedirs(tmp_path, exist_ok=True)
-    with open(os.path.join(tmp_path, "output-001.overpassql"), 'w') as f:
-        f.write(overpassql+"\n")
+    with open(os.path.join(tmp_path, "output-001.overpassql"), "w") as f:
+        f.write(overpassql + "\n")
     os.makedirs(base_path, exist_ok=True)
     # output the OverpassQL to a file to ./tmp
-    with open(save_path, 'w') as f:
-        f.write(overpassql+"\n")
+    with open(save_path, "w") as f:
+        f.write(overpassql + "\n")
     print(save_path)
 else:
     # save not_found.txt
-    with open(not_found_path, 'w') as f:
+    with open(not_found_path, "w") as f:
         f.write("")
     print(not_found_path)
 

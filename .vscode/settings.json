@@ -24,5 +24,16 @@
     "Taito",
     "tinydolphin",
     "Xinyi"
-  ]
+  ],
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "isort.args": ["--profile", "black"],
+  "flake8.args": ["--max-line-length=148", "--ignore=E203"],
+  "black-formatter.args": ["--line-length=148"],
+  "python.defaultInterpreterPath": ".venv/bin/python"
 }
