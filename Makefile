@@ -1,3 +1,23 @@
+TARGETS = \
+	aeroway \
+	railway \
+	hotel \
+	convenience \
+	park \
+	cafe \
+	bar \
+	hospital \
+	shelter \
+	museum \
+	gallery \
+	aquarium \
+	temple \
+	shrine \
+	church \
+	mosque
+
+all: $(TARGETS)
+
 aeroway:
 	python3 src/find_orphan_trident.py "data/concerns/aeroway" | xargs -I{} python3 src/generate_overpassql.py "{}"
 
