@@ -45,10 +45,7 @@ for example in examples:
     if input_txt.startswith("Area:"):
         if ";" in input_txt:
             continue
-        # Japanのみを取得
-        if "Japan" not in input_txt:
-            continue
-        if "Tokyo" in input_txt:
+        if "Hong Kong" in input_txt or "Seoul" in input_txt:
             # ","が2つ未満の場合はスキップ
             if input_txt.count(",") < 2:
                 continue
