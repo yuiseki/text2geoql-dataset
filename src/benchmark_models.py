@@ -22,9 +22,13 @@ Usage:
     uv run python src/benchmark_models.py --models qwen3:4b --trials 3
     uv run python src/benchmark_models.py --models qwen3:4b --trials 3 --no-think
 
-    # Investigate context window effect (hypothesis: larger num_ctx improves Few-Shot attention):
-    uv run python src/benchmark_models.py --models qwen3:8b --no-think --num-ctx 32768
-    uv run python src/benchmark_models.py --models gemma3:12b --num-ctx 32768
+    # Investigate context window effect (num_ctx must be passed explicitly via options;
+    # Modelfile PARAMETER num_ctx is NOT applied by ollama.generate() options):
+    #   gemma3:12b  sweet spot: --num-ctx 32768  (default ~2048 truncates prompt → 100% at 32768)
+    #   qwen3:8b    sweet spot: default 40960    (--num-ctx 32768 shrinks context → degrades)
+    #   gpt-oss:20b sweet spot: --num-ctx 128000 (same weights as gpt-oss-128k:20b)
+    uv run python src/benchmark_models.py --models gemma3:12b --no-think --num-ctx 32768
+    uv run python src/benchmark_models.py --models gpt-oss:20b --no-think --num-ctx 128000
 
 Output:
     Per-model JSON written immediately to tmp/benchmark-{slug}-{timestamp}.json
