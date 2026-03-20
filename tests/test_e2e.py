@@ -5,7 +5,7 @@ Run with:
 
 These tests are excluded from the default test run (addopts = "-m 'not e2e'").
 They require:
-  - Ollama running locally with qwen2.5-coder:0.5b pulled
+  - Ollama running locally with the model pulled (default: qwen2.5-coder:0.5b)
   - Self-hosted Overpass API reachable at https://overpass.yuiseki.net/api/interpreter
   - The ./data directory present (for few-shot examples)
 """
@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from generate_overpassql import run
+from meta import model_to_slug
 from overpass import count_elements
 
 # Smallest available coder model — fast enough for CI-style e2e
@@ -30,7 +31,6 @@ DATA_DIR = str(REPO_ROOT / "data")
 class TestRunPipeline:
     def test_generates_or_marks_not_found(self, tmp_path: Path) -> None:
         """Full pipeline: TRIDENT → LLM → Overpass validation → file saved."""
-        # Simple, well-known query: cafes in Taito, Tokyo
         instruct = "AreaWithConcern: Taito, Tokyo, Japan; Cafes"
         (tmp_path / "input-trident.txt").write_text(instruct + "\n")
 
@@ -41,11 +41,11 @@ class TestRunPipeline:
             model=E2E_MODEL,
         )
 
-        output = tmp_path / "output-001.overpassql"
-        not_found = tmp_path / "not-found.txt"
-        # Either a valid query was saved or the model produced unusable output
+        slug = model_to_slug(E2E_MODEL)
+        output = tmp_path / f"output-{slug}.overpassql"
+        not_found = tmp_path / f"not-found-{slug}.json"
         assert output.exists() or not_found.exists(), (
-            "run() must produce either output-001.overpassql or not-found.txt"
+            f"run() must produce either output-{slug}.overpassql or not-found-{slug}.json"
         )
 
     def test_saved_query_returns_elements(self, tmp_path: Path) -> None:
@@ -60,9 +60,10 @@ class TestRunPipeline:
             model=E2E_MODEL,
         )
 
-        output = tmp_path / "output-001.overpassql"
+        slug = model_to_slug(E2E_MODEL)
+        output = tmp_path / f"output-{slug}.overpassql"
         if not output.exists():
-            pytest.skip("LLM did not produce a valid query (not-found.txt created)")
+            pytest.skip("LLM did not produce a valid query (not-found recorded)")
 
         query = output.read_text().strip()
         n = count_elements(query)
@@ -75,7 +76,8 @@ class TestRunPipeline:
 
         run(base_path=str(tmp_path), data_dir=DATA_DIR, tmp_root=str(tmp_path / "tmp"), model=E2E_MODEL)
 
-        output = tmp_path / "output-001.overpassql"
+        slug = model_to_slug(E2E_MODEL)
+        output = tmp_path / f"output-{slug}.overpassql"
         mtime_after_first = output.stat().st_mtime if output.exists() else None
 
         run(base_path=str(tmp_path), data_dir=DATA_DIR, tmp_root=str(tmp_path / "tmp"), model=E2E_MODEL)

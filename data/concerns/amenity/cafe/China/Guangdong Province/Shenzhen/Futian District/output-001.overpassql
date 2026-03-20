@@ -1,4 +1,4 @@
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Shenzhen"]->.outer;
 area["name:en"="Futian District"]->.inner;
 (

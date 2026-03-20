@@ -1,5 +1,5 @@
 // Important note: SubArea: Japan/Tokyo
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Tokyo"]->.searchArea;
 (
   relation["boundary"="administrative"]["admin_level"=7](area.searchArea);

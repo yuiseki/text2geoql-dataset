@@ -1,5 +1,5 @@
 // Important note: SubArea: Japan/Fukuoka Prefecture/Fukuoka
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Fukuoka Prefecture"]->.outer;
 area["name:en"="Fukuoka"]->.inner;
 (

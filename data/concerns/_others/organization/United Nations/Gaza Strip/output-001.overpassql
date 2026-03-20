@@ -1,4 +1,4 @@
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Gaza Strip"]->.searchArea;
 (
   nwr["name"~"UN"](area.searchArea);

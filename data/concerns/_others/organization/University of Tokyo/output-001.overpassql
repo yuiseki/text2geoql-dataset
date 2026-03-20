@@ -1,4 +1,4 @@
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Tokyo"]->.searchArea;
 (
   nwr["name"~"University of Tokyo"]["amenity"="university"](area.searchArea);

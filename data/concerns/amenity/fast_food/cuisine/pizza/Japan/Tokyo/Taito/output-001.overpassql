@@ -1,5 +1,5 @@
 // Important note: Pizza shops are fast food, not restaurants!
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Tokyo"]->.outer;
 area["name:en"="Taito"]->.inner;
 (

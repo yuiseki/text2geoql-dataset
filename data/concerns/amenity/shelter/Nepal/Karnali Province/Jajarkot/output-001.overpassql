@@ -1,4 +1,4 @@
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Nepal"]->.outer;
 area["name:en"="Karnali Province"]->.inner;
 area["name:en"="Jajarkot"]->.inner2;

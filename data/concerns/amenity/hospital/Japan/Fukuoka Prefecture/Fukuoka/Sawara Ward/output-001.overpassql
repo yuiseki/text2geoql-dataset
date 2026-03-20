@@ -1,4 +1,4 @@
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Fukuoka"]->.outer;
 area["name:en"="Sawara Ward"]->.inner;
 (
