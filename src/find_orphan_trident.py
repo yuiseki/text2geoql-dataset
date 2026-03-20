@@ -1,13 +1,14 @@
 import os
 import sys
+
 # 引数で与えられたディレクトリ内で input-trident.txt だけがあって not-found.txt も output-*.overpassql もないパスを探して出力する
 
-dir_path = sys.argv[1]
+dir_path: str = sys.argv[1]
 
 
-def find_orphan_trident(dir_path):
+def find_orphan_trident(dir_path: str) -> None:
     for root, dirs, files in os.walk(dir_path):
-        if "input-trident.txt" in files and not "not-found.txt" in files and not any(
+        if "input-trident.txt" in files and "not-found.txt" not in files and not any(
             f.startswith("output-") and f.endswith(".overpassql") for f in files
         ):
             print(root)

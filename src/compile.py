@@ -1,6 +1,6 @@
-import datasets
 import os
-import sys
+
+import datasets
 
 # Collect input-*.txt files and output-*.overpassql files in ./data/**/* directory recursively
 # input-trident.txt files must be one
@@ -15,26 +15,25 @@ import sys
 # - output_type (overpassql)
 # input and output are must be paired by directory
 # input and output are must be content of files, not path of files
-text2geoql_dict_list = []
+text2geoql_dict_list: list[dict[str, str]] = []
 
 
-def collect_text2geoql_files(directory):
+def collect_text2geoql_files(directory: str) -> None:
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file == "input-trident.txt":
-                input_txt = open(os.path.join(root, file), "r").read().strip()
+                input_txt = open(os.path.join(root, file)).read().strip()
                 # search all output-*.overpassql files
                 output_files = [
                     f for f in files if f.startswith("output-") and f.endswith(".overpassql")
                 ]
                 for output_file in output_files:
-                    output_txt = open(os.path.join(
-                        root, output_file), "r").read().strip()
-                    text2geoql_dict = {
+                    output_txt = open(os.path.join(root, output_file)).read().strip()
+                    text2geoql_dict: dict[str, str] = {
                         "input": input_txt,
                         "input_type": "trident",
                         "output": output_txt,
-                        "output_type": "overpassql"
+                        "output_type": "overpassql",
                     }
                     text2geoql_dict_list.append(text2geoql_dict)
 
