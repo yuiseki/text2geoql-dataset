@@ -19,6 +19,23 @@ EMBED_MODEL = "nomic-embed-text:v1.5"
 MAX_QUERY_LINES = 20
 DEFAULT_TEMPERATURE = 0.01
 DEFAULT_NUM_PREDICT = 256
+DEFAULT_NUM_PREDICT_THINKING = 2048  # thinking consumes tokens before response
+
+# Models that enable thinking by default when think=None
+_REASONING_FAMILIES = ("qwen3", "qwen3.5")
+
+
+def default_num_predict(model: str, think: bool | None = None) -> int:
+    """Return a safe num_predict default for the given model and think setting.
+
+    When think=True (or think=None for reasoning model families), thinking
+    tokens are consumed before any response appears, requiring a larger budget.
+    """
+    is_reasoning_model = any(model.startswith(f) for f in _REASONING_FAMILIES)
+    thinking_active = think is True or (think is None and is_reasoning_model)
+    if thinking_active:
+        return DEFAULT_NUM_PREDICT_THINKING
+    return DEFAULT_NUM_PREDICT
 
 PROMPT_PREFIX = """\
 You are an expert of OpenStreetMap and Overpass API. You output the best Overpass API query based on input text.
@@ -100,16 +117,22 @@ def generate_overpassql(
     model: str = OLLAMA_MODEL,
     temperature: float = DEFAULT_TEMPERATURE,
     num_predict: int = DEFAULT_NUM_PREDICT,
+    think: bool | None = None,
 ) -> tuple[str | None, str]:
     """Call LLM and extract the OverpassQL code block from the response.
 
     Returns (query, failure_reason) where query is None on failure.
     failure_reason is one of: "no_code_block", "too_many_lines", "" (success).
+
+    think: pass False to disable chain-of-thought for models that support it
+           (e.g. qwen3, qwen3.5). None means use the model default.
     """
+    options: dict = {"temperature": temperature, "num_predict": num_predict}
     response = ollama.generate(
         prompt=prompt,
         model=model,
-        options={"temperature": temperature, "num_predict": num_predict},
+        think=think,
+        options=options,
     )
     parts = response["response"].split("```")
     if len(parts) < 2:
