@@ -1,11 +1,10 @@
 import hashlib
 import os
 import sys
-import time
 
 import ollama
 from langchain_chroma import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 
@@ -42,9 +41,7 @@ filter_area = instruct.split("; ")[0].split(": ")[-1].split(", ")[0].strip()
 print("filter_area:", filter_area)
 
 embeddings = OllamaEmbeddings(
-    model="all-minilm:l6-v2",
-    # model="nomic-embed-text:v1.5",
-    # model="mxbai-embed-large:v1",
+    model="nomic-embed-text:v1.5",
 )
 vectorstore = Chroma("langchain_store", embeddings)
 
@@ -120,9 +117,7 @@ prompt = prompt_template.format(question=question)
 
 response = ollama.generate(
     prompt=prompt,
-    model="tinydolphin:1.1b",
-    # model='tinyllama:1.1b',
-    # model='phi3:3.8b',
+    model="qwen2.5-coder:14b",
     options={
         "temperature": 0.01,
         "num_predict": 256,
@@ -155,7 +150,7 @@ def get_number_of_elements(query):
     import httpx
 
     params = {"data": query}
-    overpass_api_endpoint = "https://z.overpass-api.de/api/interpreter"
+    overpass_api_endpoint = "https://overpass.yuiseki.net/api/interpreter"
     try:
         response = httpx.get(overpass_api_endpoint, params=params, timeout=None)
         response_json = response.json()
@@ -186,8 +181,6 @@ else:
         f.write("")
     print(not_found_path)
 
-
-time.sleep(5)
 
 print("")
 print("")
