@@ -1,5 +1,5 @@
 // Important note: SubArea: Japan/Niigata Prefecture/Niigata
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Niigata Prefecture"]->.outer;
 area["name:en"="Niigata"]->.inner;
 (

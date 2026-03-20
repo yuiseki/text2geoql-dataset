@@ -1,4 +1,4 @@
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Ishikawa Prefecture"]->.searchArea;
 (
   relation["boundary"="administrative"]["name:en"="Kanazawa"](area.searchArea);

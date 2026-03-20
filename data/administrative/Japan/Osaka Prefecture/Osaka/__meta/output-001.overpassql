@@ -1,5 +1,5 @@
 // Important note: SubArea: Japan/Osaka Prefecture/Osaka
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Osaka Prefecture"]->.outer;
 area["name:en"="Osaka"]->.inner;
 (

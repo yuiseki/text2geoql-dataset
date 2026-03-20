@@ -1,5 +1,5 @@
 // Important note: Never use "religion"="buddhism". It is wrong. Use "religion"="buddhist" instead.
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Kyoto Prefecture"]->.outer;
 area["name:en"="Kyoto"]->.inner;
 (

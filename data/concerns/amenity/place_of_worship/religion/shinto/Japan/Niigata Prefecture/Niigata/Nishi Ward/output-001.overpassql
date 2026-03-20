@@ -1,4 +1,4 @@
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Niigata Prefecture"]->.outer;
 area["name:en"="Nishi Ward"]->.inner;
 (

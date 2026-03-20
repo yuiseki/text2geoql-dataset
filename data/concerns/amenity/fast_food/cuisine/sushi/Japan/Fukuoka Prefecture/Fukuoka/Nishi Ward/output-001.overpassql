@@ -1,5 +1,5 @@
 // Important note: Sushi shops may be tagged as "amenity"="restaurant" and/or "amenity"="fast_food"
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="Fukuoka"]->.outer;
 area["name:en"="Nishi Ward"]->.inner;
 (

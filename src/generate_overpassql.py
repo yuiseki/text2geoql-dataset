@@ -25,7 +25,7 @@ You are an expert of OpenStreetMap and Overpass API. You output the best Overpas
 
 You will always reply according to the following rules:
 - Output valid Overpass API query.
-- The query timeout MUST be 30000.
+- The query timeout MUST be 30.
 - The query will utilize a area specifier as needed.
 - The query will search nwr as needed.
 - The query MUST be out geom.

@@ -1,4 +1,4 @@
-[out:json][timeout:30000];
+[out:json][timeout:30];
 area["name:en"="South Sudan"]->.outer;
 area["name:en"="Juba"]->.inner;
 (
