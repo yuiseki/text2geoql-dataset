@@ -205,6 +205,7 @@ def run(
     model: str = OLLAMA_MODEL,
     temperature: float = DEFAULT_TEMPERATURE,
     num_predict: int = DEFAULT_NUM_PREDICT,
+    num_ctx: int | None = None,
 ) -> None:
     """Main generation pipeline for a single TRIDENT directory."""
     slug = model_to_slug(model)
@@ -232,7 +233,8 @@ def run(
 
     prompt = build_prompt(instruct, data_dir)
     overpassql, failure_reason = generate_overpassql(
-        prompt, model=model, temperature=temperature, num_predict=num_predict
+        prompt, model=model, temperature=temperature, num_predict=num_predict,
+        num_ctx=num_ctx,
     )
 
     if overpassql is None:

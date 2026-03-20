@@ -14,6 +14,13 @@ Usage:
     uv run python src/benchmark_models.py --group granite4
     uv run python src/benchmark_models.py --group mistral
     uv run python src/benchmark_models.py --group gpt-oss
+    uv run python src/benchmark_models.py --group phi4
+    uv run python src/benchmark_models.py --group ministral-3
+    uv run python src/benchmark_models.py --group magistral --no-think
+    uv run python src/benchmark_models.py --group deepseek-r1 --no-think
+    uv run python src/benchmark_models.py --group olmo2
+    uv run python src/benchmark_models.py --group qwen3-large --no-think
+    uv run python src/benchmark_models.py --group qwen3.5-large --no-think
 
     # Custom options:
     uv run python src/benchmark_models.py --trials 3 --query-timeout 120
@@ -112,6 +119,45 @@ MODEL_GROUPS: dict[str, list[str]] = {
         "mistral-small3.2:24b",
         "devstral-small-2:24b",
         "gemma3:27b",
+    ],
+    # Microsoft phi4 family
+    "phi4": [
+        "phi4-mini:3.8b",
+        "phi4-mini-reasoning:3.8b",
+        "phi4:14b",
+    ],
+    # Mistral ministral-3 (efficient small models)
+    "ministral-3": [
+        "ministral-3:3b",
+        "ministral-3:8b",
+        "ministral-3:14b",
+    ],
+    # Mistral reasoning
+    "magistral": [
+        "magistral:24b",
+    ],
+    # DeepSeek-R1 reasoning family
+    "deepseek-r1": [
+        "deepseek-r1:1.5b",
+        "deepseek-r1:7b",
+        "deepseek-r1:8b",
+        "deepseek-r1:14b",
+        "deepseek-r1:32b",
+    ],
+    # Allen Institute OLMo2
+    "olmo2": [
+        "olmo2:7b",
+        "olmo2:13b",
+    ],
+    # Remaining qwen3 sizes not yet benchmarked
+    "qwen3-large": [
+        "qwen3:30b",
+        "qwen3:32b",
+    ],
+    # Remaining qwen3.5 sizes not yet benchmarked
+    "qwen3.5-large": [
+        "qwen3.5:27b",
+        "qwen3.5:35b",
     ],
 }
 
