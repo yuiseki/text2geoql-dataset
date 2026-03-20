@@ -108,7 +108,7 @@ def _run_one_query(
     """Run a single instruction through LLM + Overpass. Returns a result dict."""
     t0 = time.monotonic()
     prompt = build_prompt(instruct, data_dir)
-    effective_num_predict = max(num_predict, default_num_predict(model))
+    effective_num_predict = max(num_predict, default_num_predict(model, think=think))
     query, failure_reason = generate_overpassql(
         prompt, model=model, temperature=temperature, num_predict=effective_num_predict, think=think
     )

@@ -19,9 +19,17 @@ EMBED_MODEL = "nomic-embed-text:v1.5"
 MAX_QUERY_LINES = 20
 DEFAULT_TEMPERATURE = 0.01
 DEFAULT_NUM_PREDICT = 256
+DEFAULT_NUM_PREDICT_THINKING = 2048  # thinking consumes tokens before response
 
-def default_num_predict(model: str) -> int:
-    """Return a safe num_predict default for the given model."""
+
+def default_num_predict(model: str, think: bool | None = None) -> int:
+    """Return a safe num_predict default for the given model and think setting.
+
+    When think=True, thinking tokens are consumed before any response appears,
+    requiring a much larger budget (2048+).
+    """
+    if think is True:
+        return DEFAULT_NUM_PREDICT_THINKING
     return DEFAULT_NUM_PREDICT
 
 PROMPT_PREFIX = """\
