@@ -12,5 +12,12 @@ dependencies = [
     "httpx",
 ]
 
+[tool.mypy]
+ignore_missing_imports = true
+
 [tool.uv]
-dev-dependencies = []
+dev-dependencies = [
+    "mypy>=1.19.1",
+    "ruff>=0.15.7",
+    "types-pyyaml>=6.0.12.20250915",
+]
