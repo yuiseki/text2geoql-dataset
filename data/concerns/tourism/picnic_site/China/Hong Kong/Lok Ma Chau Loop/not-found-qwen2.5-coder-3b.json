@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Hong Kong\"][boundary=administrative]->.outer;\narea[\"name:zh-hk\"=\"\u9999\u6e2f\u5e02\"]->.inner;\n(\n  nwr[\"leisure\"=\"picnic_site\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T22:00:14.218793+00:00"
+}

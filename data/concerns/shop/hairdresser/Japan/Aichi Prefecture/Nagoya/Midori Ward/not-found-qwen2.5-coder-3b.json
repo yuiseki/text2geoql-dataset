@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Nagoya\"][boundary=administrative]->.outer;\narea[\"name:en\"=\"Aichi Prefecture\"]->.inner;\n(\n  nwr[\"amenity\"=\"hairdresser\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T22:42:06.816603+00:00"
+}

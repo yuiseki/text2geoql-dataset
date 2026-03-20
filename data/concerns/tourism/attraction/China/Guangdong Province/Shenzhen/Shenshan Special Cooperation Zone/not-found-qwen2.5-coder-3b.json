@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Shenshan Special Cooperation Zone\"][boundary=administrative]->.outer;\narea[\"name:zh\"=\"\u6df1\u6c55\u7279\u522b\u5408\u4f5c\u533a\"]->.inner;\n(\n  nwr[\"tourism\"=\"attraction\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T21:54:01.579228+00:00"
+}

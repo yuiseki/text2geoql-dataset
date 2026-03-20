@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"Ikuno Ward\"]->.outer;\narea[\"name:ja\"=\"Osaka\"]->.inner;\n(\n  nwr[\"shop\"~\"secondhand\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T23:26:37.831197+00:00"
+}

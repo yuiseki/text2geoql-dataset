@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u9577\u91ce\u770c\"][\"name:en\"=\"Saitama Prefecture\"][\"name:zh-CN\"=\"\u57fc\u7389\u770c\"]->.outer;\narea[\"name:ja\"=\"\u5343\u4ee3\u7530\u533a\"][\"name:en\"=\"Chuo Ward\"]->.inner;\n(\n  nwr[\"shop\"~\"department_store\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T23:12:40.579177+00:00"
+}

@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u6df1\u5733\"][boundary=administrative]->.outer;\n(\n  nwr[\"tourism\"=\"hostel\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T22:25:12.961604+00:00"
+}

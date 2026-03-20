@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Yuen Long District\"][boundary=administrative]->.outer;\narea[\"name:zh\"=\"\u5143\u6717\u533a\"][boundary=administrative]->.inner;\n(\n  nwr[\"tourism\"=\"viewpoint\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T22:14:57.828893+00:00"
+}

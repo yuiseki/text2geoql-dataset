@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Wong Tai Sin District\"][boundary=administrative]->.outer;\narea[\"name:zh\"=\"\u65fa\u89d2\u5927\u5ec8\u5340\"][boundary=administrative]->.inner;\n(\n  nwr[\"tourism\"=\"hostel\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T22:06:48.931865+00:00"
+}

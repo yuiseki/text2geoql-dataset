@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u5e83\u5c3e\u533a\"]->.outer;\narea[\"name:ja\"=\"\u6a2a\u6d5c\u5e02\"]->.inner;\n(\n  nwr[\"shop\"~\"clothes\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T23:07:35.059199+00:00"
+}

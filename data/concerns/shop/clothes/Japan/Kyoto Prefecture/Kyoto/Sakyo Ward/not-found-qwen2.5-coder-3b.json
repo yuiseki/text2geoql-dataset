@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Sakyo Ward\"]->.outer;\narea[\"name:ja\"=\"\u685c\u306e\u53f0\"]->.inner;\n(\n  nwr[\"shop\"~\"clothes\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T23:06:51.930053+00:00"
+}

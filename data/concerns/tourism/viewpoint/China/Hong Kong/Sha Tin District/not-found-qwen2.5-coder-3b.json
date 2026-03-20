@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u6c99\u7530\u533a\"][boundary=administrative]->.outer;\narea[\"name:zh\"=\"\u6c99\u7530\u533a\"]->.inner;\n(\n  nwr[\"tourism\"=\"viewpoint\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T22:15:19.302555+00:00"
+}

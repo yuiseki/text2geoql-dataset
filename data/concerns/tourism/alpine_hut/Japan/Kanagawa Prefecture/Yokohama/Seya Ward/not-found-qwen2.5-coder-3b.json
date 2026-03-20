@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u6a2a\u6d5c\u5e02\"]->.outer;\narea[\"name:ja\"=\"\u795e\u5948\u5ddd\u770c\"]->.inner;\n(\n  nwr[\"tourism\"=\"alpine_hut\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T21:45:58.099419+00:00"
+}

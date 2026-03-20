@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Kanagawa\"][boundary=administrative]->.outer;\narea[\"name:en\"=\"Yokohama\"][boundary=administrative]->.inner;\n(\n  nwr[\"tourism\"=\"motel\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T22:29:47.385894+00:00"
+}

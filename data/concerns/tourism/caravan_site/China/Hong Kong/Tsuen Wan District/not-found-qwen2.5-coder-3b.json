@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Hong Kong\"]->.outer;\n(\n  nwr[\"tourism\"=\"caravan_site\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T22:36:39.141251+00:00"
+}
