@@ -142,6 +142,7 @@ def generate_overpassql(
     temperature: float = DEFAULT_TEMPERATURE,
     num_predict: int = DEFAULT_NUM_PREDICT,
     think: bool | None = None,
+    num_ctx: int | None = None,
 ) -> tuple[str | None, str]:
     """Call LLM and extract the OverpassQL code block from the response.
 
@@ -150,8 +151,12 @@ def generate_overpassql(
 
     think: pass False to disable chain-of-thought for models that support it
            (e.g. qwen3, qwen3.5). None means use the model default.
+    num_ctx: override the model's context window size (e.g. 32768). None uses
+             the model's default. Larger values may improve Few-Shot attention.
     """
     options: dict = {"temperature": temperature, "num_predict": num_predict}
+    if num_ctx is not None:
+        options["num_ctx"] = num_ctx
     response = ollama.generate(
         prompt=prompt,
         model=model,

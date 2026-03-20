@@ -22,6 +22,10 @@ Usage:
     uv run python src/benchmark_models.py --models qwen3:4b --trials 3
     uv run python src/benchmark_models.py --models qwen3:4b --trials 3 --no-think
 
+    # Investigate context window effect (hypothesis: larger num_ctx improves Few-Shot attention):
+    uv run python src/benchmark_models.py --models qwen3:8b --no-think --num-ctx 32768
+    uv run python src/benchmark_models.py --models gemma3:12b --num-ctx 32768
+
 Output:
     Per-model JSON written immediately to tmp/benchmark-{slug}-{timestamp}.json
     Summary table printed after each model completes.
@@ -142,13 +146,15 @@ def _run_one_query(
     temperature: float,
     num_predict: int,
     think: bool | None,
+    num_ctx: int | None = None,
 ) -> dict[str, object]:
     """Run a single instruction through LLM + Overpass. Returns a result dict."""
     t0 = time.monotonic()
     prompt = build_prompt(instruct, data_dir)
     effective_num_predict = max(num_predict, default_num_predict(model, think=think))
     query, failure_reason = generate_overpassql(
-        prompt, model=model, temperature=temperature, num_predict=effective_num_predict, think=think
+        prompt, model=model, temperature=temperature, num_predict=effective_num_predict,
+        think=think, num_ctx=num_ctx,
     )
     elapsed = time.monotonic() - t0
 
@@ -194,6 +200,7 @@ def _probe_model(
     num_predict: int,
     query_timeout: int,
     think: bool | None,
+    num_ctx: int | None = None,
 ) -> dict:
     """Run all eval instructions against one model with per-query timeout."""
     results: list[dict[str, object]] = []
@@ -203,7 +210,8 @@ def _probe_model(
             print(f"    [{trial+1}/{trials}] {instruct[:50]} ...", end=" ", flush=True)
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
-                    _run_one_query, instruct, model, data_dir, temperature, num_predict, think
+                    _run_one_query, instruct, model, data_dir, temperature, num_predict, think,
+                    num_ctx,
                 )
                 try:
                     result = future.result(timeout=query_timeout)
@@ -293,6 +301,7 @@ def run_benchmark(
     num_predict: int = 256,
     query_timeout: int = DEFAULT_QUERY_TIMEOUT,
     think: bool | None = None,
+    num_ctx: int | None = None,
     skip_unavailable: bool = True,
 ) -> dict:
     if models is None:
@@ -306,6 +315,7 @@ def run_benchmark(
         "trials_per_instruction": trials,
         "temperature": temperature,
         "num_predict": num_predict,
+        "num_ctx": num_ctx,
         "query_timeout_s": query_timeout,
         "think": think,
         "instructions": EVAL_INSTRUCTIONS,
@@ -329,6 +339,7 @@ def run_benchmark(
             num_predict=num_predict,
             query_timeout=query_timeout,
             think=think,
+            num_ctx=num_ctx,
         )
         model_report["think"] = think
         report["models"].append(model_report)
@@ -383,6 +394,10 @@ def main() -> None:
         help="Explicitly enable chain-of-thought thinking"
     )
     parser.add_argument(
+        "--num-ctx", type=int, default=None,
+        help="Override context window size (e.g. 32768). Default: model's built-in default."
+    )
+    parser.add_argument(
         "--include-unavailable", action="store_true",
         help="Attempt models not yet pulled locally (will error)"
     )
@@ -408,6 +423,7 @@ def main() -> None:
         num_predict=args.num_predict,
         query_timeout=args.query_timeout,
         think=think,
+        num_ctx=args.num_ctx,
         skip_unavailable=not args.include_unavailable,
     )
 
