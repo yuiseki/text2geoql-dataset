@@ -10,12 +10,15 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 
+from meta import GenerationMeta, FailureMeta, model_to_slug
+from overpass import fetch_elements
 from trident import parse_filter_type, parse_filter_concern, parse_filter_area
-from overpass import count_elements
 
 OLLAMA_MODEL = "qwen2.5-coder:14b"
 EMBED_MODEL = "nomic-embed-text:v1.5"
 MAX_QUERY_LINES = 20
+DEFAULT_TEMPERATURE = 0.01
+DEFAULT_NUM_PREDICT = 256
 
 PROMPT_PREFIX = """\
 You are an expert of OpenStreetMap and Overpass API. You output the best Overpass API query based on input text.
@@ -92,87 +95,130 @@ def build_prompt(instruct: str, data_dir: str) -> str:
     return prompt_template.format(question=instruct)
 
 
-def generate_overpassql(prompt: str, model: str = OLLAMA_MODEL) -> str | None:
+def generate_overpassql(
+    prompt: str,
+    model: str = OLLAMA_MODEL,
+    temperature: float = DEFAULT_TEMPERATURE,
+    num_predict: int = DEFAULT_NUM_PREDICT,
+) -> tuple[str | None, str]:
     """Call LLM and extract the OverpassQL code block from the response.
 
-    Returns None if no valid code block is found or line count exceeds limit.
+    Returns (query, failure_reason) where query is None on failure.
+    failure_reason is one of: "no_code_block", "too_many_lines", "" (success).
     """
     response = ollama.generate(
         prompt=prompt,
         model=model,
-        options={"temperature": 0.01, "num_predict": 256},
+        options={"temperature": temperature, "num_predict": num_predict},
     )
     parts = response["response"].split("```")
     if len(parts) < 2:
-        return None
+        return None, "no_code_block"
     overpassql = parts[1].strip()
     lines = overpassql.split("\n")
     if len(lines) == 0 or len(lines) > MAX_QUERY_LINES:
-        return None
-    return overpassql
+        return None, "too_many_lines"
+    return overpassql, ""
 
 
-def save_overpassql(overpassql: str, base_path: str, tmp_root: str = "./tmp") -> None:
-    """Save validated OverpassQL to base_path and tmp dedup store."""
+def save_overpassql(
+    overpassql: str,
+    base_path: str,
+    meta: GenerationMeta,
+    tmp_root: str = "./tmp",
+) -> str:
+    """Save validated OverpassQL and its provenance metadata. Returns save_path."""
+    slug = meta.model_slug
     query_hash = hashlib.md5(overpassql.encode("utf-8")).hexdigest()
     tmp_path = os.path.join(tmp_root, query_hash)
     os.makedirs(tmp_path, exist_ok=True)
-    with open(os.path.join(tmp_path, "output-001.overpassql"), "w") as f:
+    with open(os.path.join(tmp_path, f"output-{slug}.overpassql"), "w") as f:
         f.write(overpassql + "\n")
+
     os.makedirs(base_path, exist_ok=True)
-    save_path = os.path.join(base_path, "output-001.overpassql")
+    save_path = os.path.join(base_path, f"output-{slug}.overpassql")
     with open(save_path, "w") as f:
         f.write(overpassql + "\n")
 
+    meta_path = os.path.join(base_path, f"output-{slug}.meta.json")
+    meta.save(meta_path)
 
-def run(base_path: str, data_dir: str = "./data", tmp_root: str = "./tmp", model: str = OLLAMA_MODEL) -> None:
+    return save_path
+
+
+def run(
+    base_path: str,
+    data_dir: str = "./data",
+    tmp_root: str = "./tmp",
+    model: str = OLLAMA_MODEL,
+    temperature: float = DEFAULT_TEMPERATURE,
+    num_predict: int = DEFAULT_NUM_PREDICT,
+) -> None:
     """Main generation pipeline for a single TRIDENT directory."""
+    slug = model_to_slug(model)
     print("")
-    print("base_path:", base_path)
+    print(f"base_path: {base_path}  model: {model}")
 
-    save_path = os.path.join(base_path, "output-001.overpassql")
+    save_path = os.path.join(base_path, f"output-{slug}.overpassql")
     if os.path.exists(save_path):
         print("OverpassQL already saved!")
         return
 
-    not_found_path = os.path.join(base_path, "not-found.txt")
+    not_found_path = os.path.join(base_path, f"not-found-{slug}.json")
     if os.path.exists(not_found_path):
-        print("not-found.txt exists!")
+        print("not-found already recorded!")
+        return
+
+    # Legacy compat: honour old not-found.txt
+    if os.path.exists(os.path.join(base_path, "not-found.txt")):
+        print("Legacy not-found.txt exists — skipping.")
         return
 
     instruct_file_path = os.path.join(base_path, "input-trident.txt")
     instruct = open(instruct_file_path).read().strip()
     print("instruct:", instruct)
 
-    query_hash_tmp = hashlib.md5(b"").hexdigest()  # placeholder until we have the query
     prompt = build_prompt(instruct, data_dir)
-    overpassql = generate_overpassql(prompt, model=model)
+    overpassql, failure_reason = generate_overpassql(
+        prompt, model=model, temperature=temperature, num_predict=num_predict
+    )
 
     if overpassql is None:
-        print("OverpassQL is not valid!")
-        with open(not_found_path, "w") as f:
-            f.write("")
+        print(f"LLM generation failed: {failure_reason}")
+        FailureMeta.create(model=model, reason=failure_reason, query=None).save(not_found_path)  # type: ignore[arg-type]
         return
 
     print("Generated OverpassQL:\n===")
     print(overpassql)
     print("===")
 
-    query_hash_tmp = hashlib.md5(overpassql.encode("utf-8")).hexdigest()
-    tmp_path = os.path.join(tmp_root, query_hash_tmp)
-    if os.path.exists(os.path.join(tmp_path, "output-001.overpassql")):
-        print("OverpassQL already exists!")
+    query_hash = hashlib.md5(overpassql.encode("utf-8")).hexdigest()
+    tmp_path = os.path.join(tmp_root, query_hash)
+    if os.path.exists(os.path.join(tmp_path, f"output-{slug}.overpassql")):
+        print("OverpassQL already exists in tmp!")
         return
 
-    n = count_elements(overpassql)
+    try:
+        elements = fetch_elements(overpassql)
+        n = len(elements)
+    except Exception as e:
+        print(f"Overpass API error: {e}")
+        FailureMeta.create(model=model, reason="api_error", query=overpassql).save(not_found_path)
+        return
+
     print("number of elements:", n)
 
     if n > 0:
-        save_overpassql(overpassql, base_path, tmp_root)
-        print(save_path)
+        meta = GenerationMeta.create(
+            model=model,
+            temperature=temperature,
+            num_predict=num_predict,
+            element_count=n,
+        )
+        saved = save_overpassql(overpassql, base_path, meta, tmp_root)
+        print(saved)
     else:
-        with open(not_found_path, "w") as f:
-            f.write("")
+        FailureMeta.create(model=model, reason="zero_results", query=overpassql).save(not_found_path)
         print(not_found_path)
 
 
