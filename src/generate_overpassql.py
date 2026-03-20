@@ -21,14 +21,19 @@ DEFAULT_TEMPERATURE = 0.01
 DEFAULT_NUM_PREDICT = 256
 DEFAULT_NUM_PREDICT_THINKING = 2048  # thinking consumes tokens before response
 
+# Models that enable thinking by default when think=None
+_REASONING_FAMILIES = ("qwen3", "qwen3.5")
+
 
 def default_num_predict(model: str, think: bool | None = None) -> int:
     """Return a safe num_predict default for the given model and think setting.
 
-    When think=True, thinking tokens are consumed before any response appears,
-    requiring a much larger budget (2048+).
+    When think=True (or think=None for reasoning model families), thinking
+    tokens are consumed before any response appears, requiring a larger budget.
     """
-    if think is True:
+    is_reasoning_model = any(model.startswith(f) for f in _REASONING_FAMILIES)
+    thinking_active = think is True or (think is None and is_reasoning_model)
+    if thinking_active:
         return DEFAULT_NUM_PREDICT_THINKING
     return DEFAULT_NUM_PREDICT
 
