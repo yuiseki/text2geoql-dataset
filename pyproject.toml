@@ -12,12 +12,17 @@ dependencies = [
     "httpx",
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
 [tool.mypy]
 ignore_missing_imports = true
 
 [tool.uv]
 dev-dependencies = [
     "mypy>=1.19.1",
+    "pytest>=9.0.2",
     "ruff>=0.15.7",
     "types-pyyaml>=6.0.12.20250915",
 ]
