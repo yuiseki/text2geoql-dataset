@@ -2,7 +2,16 @@
 # ── Transport ────────────────────────────────────────────────────────────────
 Airports: data/concerns/aeroway/aerodrome
 Train Stations: data/concerns/railway/station
+Tram Stops: data/concerns/railway/tram_stop
+Subway Entrances: data/concerns/railway/subway_entrance
 Bus Stations: data/concerns/amenity/bus_station
+Ferries: data/concerns/amenity/ferry_terminal
+Bicycle Rental: data/concerns/amenity/bicycle_rental
+Car Rental: data/concerns/amenity/car_rental
+Car Sharing: data/concerns/amenity/car_sharing
+EV Charging Stations: data/concerns/amenity/charging_station
+Helipads: data/concerns/aeroway/helipad
+Lighthouses: data/concerns/man_made/lighthouse
 
 # ── Accommodation ────────────────────────────────────────────────────────────
 # Composite: 「宿泊施設」= hotel + guest_house + hostel (see ADR-009)
@@ -11,6 +20,9 @@ Hotels: data/concerns/tourism/hotel
 Guest Houses: data/concerns/tourism/guest_house
 Hostels: data/concerns/tourism/hostel
 Camp Sites: data/concerns/tourism/camp_site
+Motels: data/concerns/tourism/motel
+Alpine Huts: data/concerns/tourism/alpine_hut
+Caravan Sites: data/concerns/tourism/caravan_site
 
 # ── Food & Drink ─────────────────────────────────────────────────────────────
 Restaurants: data/concerns/amenity/restaurant
@@ -19,6 +31,8 @@ Bars: data/concerns/amenity/bar
 Pubs: data/concerns/amenity/pub
 Ice Cream Shops: data/concerns/amenity/ice_cream
 Bakeries: data/concerns/shop/bakery
+Nightclubs: data/concerns/amenity/nightclub
+Casinos: data/concerns/amenity/casino
 
 # cuisine subtags (fast_food)
 Burger shops: data/concerns/amenity/fast_food/cuisine/burger
@@ -47,6 +61,10 @@ Clothes shops: data/concerns/shop/clothes
 Bookstores: data/concerns/shop/books
 Bicycle shops: data/concerns/shop/bicycle
 Laundromats: data/concerns/shop/laundry
+Second-hand Shops: data/concerns/shop/second_hand
+Florists: data/concerns/shop/florist
+Hairdressers: data/concerns/shop/hairdresser
+Opticians: data/concerns/shop/optician
 
 # ── Health & Medical ─────────────────────────────────────────────────────────
 # Composite broad: 「病院」(Japanese sense) = hospital + clinic + doctors (see ADR-009)
@@ -59,6 +77,17 @@ Clinics and Doctors: data/concerns/medical/clinic_and_doctor
 Pharmacies: data/concerns/medical/pharmacy
 # Dentists: sufficiently specific, single concept
 Dentists: data/concerns/amenity/dentist
+Veterinaries: data/concerns/amenity/veterinary
+Animal Boarding: data/concerns/amenity/animal_boarding
+Animal Shelters: data/concerns/amenity/animal_shelter
+Social Facilities: data/concerns/amenity/social_facility
+Food Banks: data/concerns/amenity/food_bank
+Soup Kitchens: data/concerns/social_facility/soup_kitchen
+Day Care Centres: data/concerns/social_facility/day_care
+Assisted Living: data/concerns/social_facility/assisted_living
+Blood Donation: data/concerns/healthcare/blood_donation
+Vaccination Centres: data/concerns/healthcare/vaccination_centre
+Physiotherapists: data/concerns/healthcare/physiotherapist
 
 # ── Education ────────────────────────────────────────────────────────────────
 University campuses: data/concerns/amenity/university
@@ -79,17 +108,39 @@ Government Offices: data/concerns/office/government
 Embassies: data/concerns/office/diplomatic
 Marketplaces: data/concerns/amenity/marketplace
 Shelters: data/concerns/amenity/shelter
+Public Toilets: data/concerns/amenity/toilets
+Drinking Water: data/concerns/amenity/drinking_water
+Recycling Points: data/concerns/amenity/recycling
+Vending Machines: data/concerns/amenity/vending_machine
+Public Bookcases: data/concerns/amenity/public_bookcase
+Parcel Lockers: data/concerns/amenity/parcel_locker
+AED Defibrillators: data/concerns/emergency/defibrillator
+Emergency Assembly Points: data/concerns/emergency/assembly_point
 
 # ── Parks & Nature ───────────────────────────────────────────────────────────
 Parks: data/concerns/leisure/park
 Gardens: data/concerns/leisure/garden
 Playgrounds: data/concerns/leisure/playground
 Nature Reserves: data/concerns/leisure/nature_reserve
+Picnic Sites: data/concerns/tourism/picnic_site
+Dog Parks: data/concerns/leisure/dog_park
+Marinas: data/concerns/leisure/marina
+Swimming Pools: data/concerns/leisure/swimming_pool
+Beach Resorts: data/concerns/leisure/beach_resort
+Fishing Areas: data/concerns/leisure/fishing
+Bird Hides: data/concerns/leisure/bird_hide
 
 # ── Sport & Fitness ──────────────────────────────────────────────────────────
 Sports Centres: data/concerns/leisure/sports_centre
 Fitness Centres: data/concerns/leisure/fitness_centre
 Stadiums: data/concerns/leisure/stadium
+Ice Rinks: data/concerns/leisure/ice_rink
+Golf Courses: data/concerns/leisure/golf_course
+Bowling Alleys: data/concerns/leisure/bowling_alley
+Horse Riding: data/concerns/leisure/horse_riding
+Trampoline Parks: data/concerns/leisure/trampoline_park
+Escape Rooms: data/concerns/leisure/escape_game
+Water Parks: data/concerns/leisure/water_park
 
 # ── Tourism & Culture ────────────────────────────────────────────────────────
 Museums: data/concerns/tourism/museum
@@ -101,11 +152,20 @@ Tourist Attractions: data/concerns/tourism/attraction
 Viewpoints: data/concerns/tourism/viewpoint
 
 # ── Historic & Heritage ──────────────────────────────────────────────────────
+UNESCO World Heritage Sites: data/concerns/heritage/1
+National Heritage Sites: data/concerns/heritage/2
 Castles: data/concerns/historic/castle
+Forts: data/concerns/historic/fort
+Monasteries: data/concerns/historic/monastery
+Battlefields: data/concerns/historic/battlefield
+City Gates: data/concerns/historic/city_gate
+Aqueducts: data/concerns/historic/aqueduct
+Wayside Shrines: data/concerns/historic/wayside_shrine
 Memorials: data/concerns/historic/memorial
 Monuments: data/concerns/historic/monument
 Ruins: data/concerns/historic/ruins
 Archaeological Sites: data/concerns/historic/archaeological_site
+Tombs: data/concerns/historic/tomb
 
 # ── Places of Worship ────────────────────────────────────────────────────────
 Churches: data/concerns/building/church
@@ -114,3 +174,15 @@ Temples: data/concerns/amenity/place_of_worship/religion/buddhist
 Shrines: data/concerns/amenity/place_of_worship/religion/shinto
 Hindu Temples: data/concerns/amenity/place_of_worship/religion/hindu
 Synagogues: data/concerns/amenity/place_of_worship/religion/jewish
+Torii Gates: data/concerns/ceremonial_gate/torii
+Stupas: data/concerns/man_made/stupa
+
+# ── Craft & Artisan ───────────────────────────────────────────────────────────
+Breweries: data/concerns/craft/brewery
+Distilleries: data/concerns/craft/distillery
+Wineries: data/concerns/craft/winery
+Potters: data/concerns/craft/pottery
+Blacksmiths: data/concerns/craft/blacksmith
+
+# ── Natural Features ──────────────────────────────────────────────────────────
+Cave Entrances: data/concerns/natural/cave_entrance
