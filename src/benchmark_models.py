@@ -100,6 +100,14 @@ MODEL_GROUPS: dict[str, list[str]] = {
         "granite4:micro-h",
         "granite4:tiny-h",
     ],
+    "granite3.2": [
+        "granite3.2:2b",
+        "granite3.2:8b",
+    ],
+    "granite3.3": [
+        "granite3.3:2b",
+        "granite3.3:8b",
+    ],
     "mistral": [
         "mistral:7b",
         "mistral-small3.2:24b",
