@@ -112,7 +112,7 @@ def build_prompt(instruct: str, data_dir: str) -> str:
     """Build a few-shot prompt for the given TRIDENT instruction."""
     embeddings = OllamaEmbeddings(model=EMBED_MODEL)
     vectorstore = Chroma("langchain_store", embeddings)
-    example_selector = SemanticSimilarityExampleSelector(vectorstore=vectorstore, k=6)
+    example_selector = SemanticSimilarityExampleSelector(vectorstore=vectorstore, k=4)
 
     load_examples_for_instruct(
         data_dir=data_dir,
