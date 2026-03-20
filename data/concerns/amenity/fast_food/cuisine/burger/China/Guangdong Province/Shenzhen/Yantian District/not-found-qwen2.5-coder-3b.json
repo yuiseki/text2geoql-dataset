@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name\"=\"Yantian District\"][\"admin_level\"=8][\"country\"=\"China\"]->.searchArea;\n(\n  nwr[\"amenity\"=\"fast_food\"][\"cuisine\"=\"burger\"](area.searchArea);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:23:14.644701+00:00"
+}

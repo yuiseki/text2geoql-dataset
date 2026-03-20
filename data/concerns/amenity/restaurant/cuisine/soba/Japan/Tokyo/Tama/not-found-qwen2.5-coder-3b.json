@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Tokyo\"]->.outer;\narea[\"name:en\"=\"Tama\"]->.inner;\n(\n  nwr[\"shop\"=\"soba\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:04:33.445634+00:00"
+}

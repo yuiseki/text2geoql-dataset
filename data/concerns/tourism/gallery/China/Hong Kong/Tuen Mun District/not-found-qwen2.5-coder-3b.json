@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u5c6f\u95e8\u533a\"]->.outer;\narea[\"name:en\"=\"Tuen Mun District\"]->.inner;\n(\n  nwr[\"tourism\"=\"gallery\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:20:21.385263+00:00"
+}

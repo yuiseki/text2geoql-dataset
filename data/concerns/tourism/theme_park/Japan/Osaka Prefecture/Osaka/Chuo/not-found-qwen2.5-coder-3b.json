@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u5927\u962a\u5e02\u4e2d\u592e\u533a\"]->.outer;\narea[\"name:en\"=\"Chuo, Osaka, Osaka Prefecture, Japan\"]->.inner;\n(\n  nwr[\"tourism\"=\"theme_park\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:15:11.997423+00:00"
+}

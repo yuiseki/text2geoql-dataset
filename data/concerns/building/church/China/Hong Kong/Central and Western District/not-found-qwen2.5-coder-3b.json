@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Central and Western District\", \"country:cn\"]->.searchArea;\n(\n  nwr[\"building\"=\"church\"](area.searchArea);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:32:44.304556+00:00"
+}

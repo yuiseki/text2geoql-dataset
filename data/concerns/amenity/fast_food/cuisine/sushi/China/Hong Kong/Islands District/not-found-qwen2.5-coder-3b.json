@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "// Important note: Sushi shops are typically found in specific areas of Hong Kong.\n[out:json][timeout:30];\narea[\"name:zh\"=\"\u9999\u6e2f\u5e02\"][\"district:zh\"=\"\u5c9b\u533a\"];\n(\n  nwr[\"amenity\"=\"restaurant\"][\"cuisine\"=\"sushi\"](area);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:44:00.938173+00:00"
+}

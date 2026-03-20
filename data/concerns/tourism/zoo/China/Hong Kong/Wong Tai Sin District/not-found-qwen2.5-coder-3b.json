@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u9999\u6e2f\u7279\u522b\u884c\u653f\u533a\"]->.outer;\narea[\"name:zh\"=\"\u4e5d\u9f99\u533a\"]->.inner;\n(\n  nwr[\"tourism\"=\"zoo\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:09:32.110144+00:00"
+}

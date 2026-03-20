@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "// Important note: Sushi shops are typically found in traditional Japanese restaurants or sushi bars.\n[out:json][timeout:30];\narea[\"name:en\"=\"Tokyo\"]->.outer;\narea[\"name:en\"=\"Hinohara\"]->.inner;\n(\n  nwr[\"amenity\"=\"restaurant\"][\"cuisine\"~\"sushi\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:36:49.500757+00:00"
+}

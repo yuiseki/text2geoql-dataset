@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh-hk\"=\"\u9999\u6e2f\u5cf6\"]->.outer;\n(\n  nwr[\"amenity\"=\"hospital\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:47:25.323065+00:00"
+}

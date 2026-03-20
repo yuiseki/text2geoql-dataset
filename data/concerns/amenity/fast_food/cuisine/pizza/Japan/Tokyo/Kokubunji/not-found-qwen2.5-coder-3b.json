@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "// Important note: Pizza shops are fast food, not restaurants!\n[out:json][timeout:30];\narea[\"name:en\"=\"Tokyo\"]->.outer;\narea[\"name:en\"=\"Kokubunji\"]->.inner;\n(\n  nwr[\"amenity\"=\"fast_food\"][\"cuisine\"=\"pizza\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:29:33.524677+00:00"
+}

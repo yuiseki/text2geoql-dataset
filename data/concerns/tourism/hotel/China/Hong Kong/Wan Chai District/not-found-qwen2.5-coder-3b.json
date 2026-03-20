@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u6e7e\u4ed4\u533a\"]->.outer;\narea[\"name:en\"=\"Wan Chai District\"]->.inner;\n(\n  nwr[\"tourism\"=\"hotel\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:23:13.362020+00:00"
+}

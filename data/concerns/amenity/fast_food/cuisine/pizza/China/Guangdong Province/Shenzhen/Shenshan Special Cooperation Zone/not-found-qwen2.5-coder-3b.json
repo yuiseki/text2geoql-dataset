@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Shenzhen\"]->.outer;\narea[\"name:en\"=\"Guangdong Province\"]->.inner;\narea[\"name:zh\"=\"\u6df1\u6c55\u7279\u522b\u5408\u4f5c\u533a\"]->.middle;\n(\n  nwr[\"amenity\"=\"fast_food\"][\"cuisine\"=\"pizza\"](area.middle)(area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:32:09.979118+00:00"
+}

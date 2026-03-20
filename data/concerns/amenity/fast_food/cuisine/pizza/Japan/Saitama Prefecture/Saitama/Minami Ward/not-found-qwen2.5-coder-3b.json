@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"Minami Ward\"]->.outer;\narea[\"name:ja\"=\"Saitama\"]->.inner;\n(\n  nwr[\"amenity\"=\"fast_food\"][\"cuisine\"=\"pizza\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:25:04.729920+00:00"
+}

@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh-CN\"=\"\u6df1\u5733\u5e02\"][admin_level=8]->.outer;\narea[\"name:en\"=\"Shenzhen\"][admin_level=8]->.inner;\n(\n  nwr[\"tourism\"=\"theme_park\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:17:32.534464+00:00"
+}

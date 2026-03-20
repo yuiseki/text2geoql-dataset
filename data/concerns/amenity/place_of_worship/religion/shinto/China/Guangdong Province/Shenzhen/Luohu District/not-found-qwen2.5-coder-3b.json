@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u7f57\u6e56\u533a\"]->.outer;\narea[\"name:en\"=\"Luohu District\"]->.inner;\n(\n  nwr[\"religion\"=\"shrine\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:55:23.088753+00:00"
+}

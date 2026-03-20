@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ko\"=\"\uc601\ub4f1\ud3ec\uad6c\"]->.outer;\n(\n  nwr[\"amenity\"=\"fast_food\"][\"cuisine\"~\"sushi\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:34:53.473846+00:00"
+}

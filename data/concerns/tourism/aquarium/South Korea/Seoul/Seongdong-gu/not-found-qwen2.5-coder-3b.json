@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ko\"=\"\uc11c\uc6b8\ud2b9\ubcc4\uc2dc\"][\"city\"=\"\uc11c\ucd08\uad6c\"];\n(\n  nwr[\"tourism\"=\"aquarium\"](area);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:18:27.877502+00:00"
+}

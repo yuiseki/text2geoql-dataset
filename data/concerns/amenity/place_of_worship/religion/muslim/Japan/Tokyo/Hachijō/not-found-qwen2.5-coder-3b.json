@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u6a2a\u6d5c\u5e02\"]->.outer;\narea[\"name:en\"=\"Yokohama\"]->.inner;\n(\n  nwr[\"amenity\"=\"mosque\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T16:01:17.349563+00:00"
+}

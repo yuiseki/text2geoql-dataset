@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u76d0\u7530\u533a\"]->.outer;\narea[\"name:en\"=\"Yantian District\"]->.inner;\n(\n  nwr[\"aeroway\"=\"airport\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T16:16:50.546936+00:00"
+}

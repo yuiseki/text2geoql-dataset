@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh-hk\"=\"\u897f\u8d21\u533a\"]->.outer;\narea[\"name:en\"=\"Sai Kung District\"]->.inner;\n(\n  nwr[\"tourism\"=\"museum\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:11:57.273500+00:00"
+}

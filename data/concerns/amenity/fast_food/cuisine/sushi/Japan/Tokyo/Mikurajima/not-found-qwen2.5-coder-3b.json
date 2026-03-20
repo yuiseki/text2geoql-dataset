@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "// Important note: Sushi shops are typically found in coastal areas and may not be present in the city center.\n[out:json][timeout:30];\narea[\"name:en\"=\"Tokyo\"]->.outer;\narea[\"name:en\"=\"Mikurajima\"]->.inner;\n(\n  nwr[\"amenity\"=\"restaurant\"][\"cuisine\"=\"sushi\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:37:15.309342+00:00"
+}

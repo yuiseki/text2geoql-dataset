@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u5ca9\u624b\u770c\"][admin_level=2]->.outer;\narea[\"name:en\"=\"Iwatsuki\"]->.inner;\n(\n  nwr[\"amenity\"=\"university\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:53:02.424793+00:00"
+}

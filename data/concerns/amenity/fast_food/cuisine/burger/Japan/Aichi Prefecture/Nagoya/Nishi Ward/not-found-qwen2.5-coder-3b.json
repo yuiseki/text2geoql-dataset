@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name\"=\"Nishi Ward\"][\"county\"=\"Aichi Prefecture\"]->.searchArea;\n(\n  nwr[\"amenity\"=\"fast_food\"][\"cuisine\"=\"burger\"](area.searchArea);\n);\nout geom;",
+  "generated_at": "2026-03-20T15:18:32.456372+00:00"
+}

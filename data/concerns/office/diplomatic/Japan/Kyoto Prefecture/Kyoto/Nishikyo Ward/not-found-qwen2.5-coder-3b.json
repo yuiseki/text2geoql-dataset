@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"nishikyo ward\"]->.outer;\narea[\"name:en\"=\"Nishikyo Ward\"]->.inner;\n(\n  nwr[\"tourism\"=\"embassy\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:38:07.949846+00:00"
+}

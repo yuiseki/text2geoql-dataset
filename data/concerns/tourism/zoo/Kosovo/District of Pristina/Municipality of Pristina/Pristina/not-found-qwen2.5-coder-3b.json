@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name\"=\"Pristina\"]->.outer;\narea[\"name\"=\"Municipality of Pristina\"]->.inner;\n(\n  nwr[\"tourism\"=\"zoo\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:04:39.977245+00:00"
+}

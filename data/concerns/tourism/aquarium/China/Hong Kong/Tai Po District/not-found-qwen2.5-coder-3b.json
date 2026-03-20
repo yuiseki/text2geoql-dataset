@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh-hk\"=\"\u5927\u57d4\u5340\"]->.outer;\narea[\"name:en\"=\"Tai Po District\"]->.inner;\n(\n  nwr[\"tourism\"=\"aquarium\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-20T14:18:55.901176+00:00"
+}
