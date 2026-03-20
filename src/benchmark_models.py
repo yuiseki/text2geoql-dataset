@@ -30,6 +30,7 @@ DEFAULT_MODELS = [
     "qwen2.5-coder:7b",
     "qwen2.5-coder:14b",
     "qwen2.5-coder:32b",
+    "qwen3-coder:30b",
 ]
 
 # Fixed evaluation set: diverse TRIDENT instructions
