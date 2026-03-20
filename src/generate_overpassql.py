@@ -20,6 +20,17 @@ MAX_QUERY_LINES = 20
 DEFAULT_TEMPERATURE = 0.01
 DEFAULT_NUM_PREDICT = 256
 
+# qwen3/qwen3.5 consume thinking tokens that count against num_predict
+# even when think=False, requiring a larger budget
+_QWEN3_FAMILIES = ("qwen3", "qwen3.5")
+
+
+def default_num_predict(model: str) -> int:
+    """Return a safe num_predict default for the given model."""
+    if any(model.startswith(f) for f in _QWEN3_FAMILIES):
+        return 1024
+    return DEFAULT_NUM_PREDICT
+
 PROMPT_PREFIX = """\
 You are an expert of OpenStreetMap and Overpass API. You output the best Overpass API query based on input text.
 
