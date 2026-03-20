@@ -20,15 +20,8 @@ MAX_QUERY_LINES = 20
 DEFAULT_TEMPERATURE = 0.01
 DEFAULT_NUM_PREDICT = 256
 
-# qwen3/qwen3.5 consume thinking tokens that count against num_predict
-# even when think=False, requiring a larger budget
-_QWEN3_FAMILIES = ("qwen3", "qwen3.5")
-
-
 def default_num_predict(model: str) -> int:
     """Return a safe num_predict default for the given model."""
-    if any(model.startswith(f) for f in _QWEN3_FAMILIES):
-        return 1024
     return DEFAULT_NUM_PREDICT
 
 PROMPT_PREFIX = """\
@@ -122,11 +115,10 @@ def generate_overpassql(
            (e.g. qwen3, qwen3.5). None means use the model default.
     """
     options: dict = {"temperature": temperature, "num_predict": num_predict}
-    if think is not None:
-        options["think"] = think
     response = ollama.generate(
         prompt=prompt,
         model=model,
+        think=think,
         options=options,
     )
     parts = response["response"].split("```")

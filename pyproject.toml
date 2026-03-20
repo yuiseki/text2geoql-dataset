@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Dataset generation for text-to-Overpass QL translation"
 requires-python = ">=3.12"
 dependencies = [
-    "ollama",
+    "ollama>=0.6.1",
     "langchain",
     "langchain-chroma",
     "langchain-ollama",

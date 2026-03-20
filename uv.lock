@@ -2380,7 +2380,7 @@ requires-dist = [
     { name = "langchain" },
     { name = "langchain-chroma" },
     { name = "langchain-ollama" },
-    { name = "ollama" },
+    { name = "ollama", specifier = ">=0.6.1" },
 ]
 
 [package.metadata.requires-dev]
