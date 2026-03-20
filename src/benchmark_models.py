@@ -10,6 +10,10 @@ Usage:
     uv run python src/benchmark_models.py --group qwen2.5-coder
     uv run python src/benchmark_models.py --group qwen3
     uv run python src/benchmark_models.py --group qwen3.5
+    uv run python src/benchmark_models.py --group gemma3
+    uv run python src/benchmark_models.py --group granite4
+    uv run python src/benchmark_models.py --group mistral
+    uv run python src/benchmark_models.py --group gpt-oss
 
     # Custom options:
     uv run python src/benchmark_models.py --trials 3 --query-timeout 120
@@ -37,7 +41,7 @@ from generate_overpassql import build_prompt, generate_overpassql, default_num_p
 from meta import model_to_slug
 from overpass import fetch_elements
 
-# Named model groups (Qwen family only; ascending parameter count)
+# Named model groups (ascending parameter count within each family)
 MODEL_GROUPS: dict[str, list[str]] = {
     "qwen2.5-coder": [
         "qwen2.5-coder:0.5b",
@@ -66,6 +70,30 @@ MODEL_GROUPS: dict[str, list[str]] = {
         "qwen3.5:9b",
         "qwen3.5:27b",
         "qwen3.5:35b",
+    ],
+    "gemma3": [
+        "gemma3:270m",
+        "gemma3:1b",
+        "gemma3:4b",
+        "gemma3:12b",
+        "gemma3:27b",
+    ],
+    "granite4": [
+        "granite4:350m",
+        "granite4:1b",
+        "granite4:3b",
+        "granite4:micro-h",
+        "granite4:tiny-h",
+    ],
+    "mistral": [
+        "mistral:7b",
+        "mistral-small3.2:24b",
+        "devstral-small-2:24b",
+    ],
+    "gpt-oss": [
+        "gpt-oss:20b",
+        "gpt-oss-128k:20b",
+        "gpt-oss:120b",
     ],
 }
 
