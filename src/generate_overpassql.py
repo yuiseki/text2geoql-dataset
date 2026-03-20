@@ -100,16 +100,23 @@ def generate_overpassql(
     model: str = OLLAMA_MODEL,
     temperature: float = DEFAULT_TEMPERATURE,
     num_predict: int = DEFAULT_NUM_PREDICT,
+    think: bool | None = None,
 ) -> tuple[str | None, str]:
     """Call LLM and extract the OverpassQL code block from the response.
 
     Returns (query, failure_reason) where query is None on failure.
     failure_reason is one of: "no_code_block", "too_many_lines", "" (success).
+
+    think: pass False to disable chain-of-thought for models that support it
+           (e.g. qwen3, qwen3.5). None means use the model default.
     """
+    options: dict = {"temperature": temperature, "num_predict": num_predict}
+    if think is not None:
+        options["think"] = think
     response = ollama.generate(
         prompt=prompt,
         model=model,
-        options={"temperature": temperature, "num_predict": num_predict},
+        options=options,
     )
     parts = response["response"].split("```")
     if len(parts) < 2:
