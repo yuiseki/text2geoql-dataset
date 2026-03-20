@@ -1,27 +1,116 @@
 
+# ── Transport ────────────────────────────────────────────────────────────────
 Airports: data/concerns/aeroway/aerodrome
 Train Stations: data/concerns/railway/station
+Bus Stations: data/concerns/amenity/bus_station
+
+# ── Accommodation ────────────────────────────────────────────────────────────
+# Composite: 「宿泊施設」= hotel + guest_house + hostel (see ADR-009)
+Accommodation: data/concerns/accommodation/all
 Hotels: data/concerns/tourism/hotel
+Guest Houses: data/concerns/tourism/guest_house
+Hostels: data/concerns/tourism/hostel
+Camp Sites: data/concerns/tourism/camp_site
+
+# ── Food & Drink ─────────────────────────────────────────────────────────────
+Restaurants: data/concerns/amenity/restaurant
+Cafes: data/concerns/amenity/cafe
+Bars: data/concerns/amenity/bar
+Pubs: data/concerns/amenity/pub
+Ice Cream Shops: data/concerns/amenity/ice_cream
+Bakeries: data/concerns/shop/bakery
+
+# cuisine subtags (fast_food)
+Burger shops: data/concerns/amenity/fast_food/cuisine/burger
+Pizza shops: data/concerns/amenity/fast_food/cuisine/pizza
+Sushi shops: data/concerns/amenity/fast_food/cuisine/sushi
+
+# cuisine subtags (restaurant)
+Ramen shops: data/concerns/amenity/restaurant/cuisine/ramen
+Soba noodle shops: data/concerns/amenity/restaurant/cuisine/soba
+Chinese restaurants: data/concerns/amenity/restaurant/cuisine/chinese
+Italian restaurants: data/concerns/amenity/restaurant/cuisine/italian
+Indian restaurants: data/concerns/amenity/restaurant/cuisine/indian
+Korean restaurants: data/concerns/amenity/restaurant/cuisine/korean
+Thai restaurants: data/concerns/amenity/restaurant/cuisine/thai
+Vietnamese restaurants: data/concerns/amenity/restaurant/cuisine/vietnamese
+French restaurants: data/concerns/amenity/restaurant/cuisine/french
+Mexican restaurants: data/concerns/amenity/restaurant/cuisine/mexican
+
+# ── Shopping ─────────────────────────────────────────────────────────────────
 Convenience stores: data/concerns/shop/convenience
+Supermarkets: data/concerns/shop/supermarket
+Department stores: data/concerns/shop/department_store
+Shopping malls: data/concerns/shop/mall
+Electronics stores: data/concerns/shop/electronics
+Clothes shops: data/concerns/shop/clothes
+Bookstores: data/concerns/shop/books
+Bicycle shops: data/concerns/shop/bicycle
+Laundromats: data/concerns/shop/laundry
+
+# ── Health & Medical ─────────────────────────────────────────────────────────
+# Composite broad: 「病院」(Japanese sense) = hospital + clinic + doctors (see ADR-009)
+Medical Facilities: data/concerns/medical/all
+# Composite: hospital only, covering amenity= and healthcare= namespaces
+Hospitals: data/concerns/amenity/hospital
+# Composite: clinic + doctors union, covering amenity= and healthcare= namespaces
+Clinics and Doctors: data/concerns/medical/clinic_and_doctor
+# Composite: 「薬局」= amenity=pharmacy + healthcare=pharmacy (see ADR-009)
+Pharmacies: data/concerns/medical/pharmacy
+# Dentists: sufficiently specific, single concept
+Dentists: data/concerns/amenity/dentist
+
+# ── Education ────────────────────────────────────────────────────────────────
+University campuses: data/concerns/amenity/university
+Colleges: data/concerns/amenity/college
+Kindergartens: data/concerns/amenity/kindergarten
+Libraries: data/concerns/amenity/library
+
+# ── Finance & Services ───────────────────────────────────────────────────────
+Banks: data/concerns/amenity/bank
+Post Offices: data/concerns/amenity/post_office
+
+# ── Public Facilities ────────────────────────────────────────────────────────
+Police Stations: data/concerns/amenity/police
+Fire Stations: data/concerns/amenity/fire_station
+Town Halls: data/concerns/amenity/townhall
+Community Centres: data/concerns/amenity/community_centre
+Government Offices: data/concerns/office/government
+Embassies: data/concerns/office/diplomatic
+Marketplaces: data/concerns/amenity/marketplace
+Shelters: data/concerns/amenity/shelter
+
+# ── Parks & Nature ───────────────────────────────────────────────────────────
+Parks: data/concerns/leisure/park
+Gardens: data/concerns/leisure/garden
+Playgrounds: data/concerns/leisure/playground
+Nature Reserves: data/concerns/leisure/nature_reserve
+
+# ── Sport & Fitness ──────────────────────────────────────────────────────────
+Sports Centres: data/concerns/leisure/sports_centre
+Fitness Centres: data/concerns/leisure/fitness_centre
+Stadiums: data/concerns/leisure/stadium
+
+# ── Tourism & Culture ────────────────────────────────────────────────────────
 Museums: data/concerns/tourism/museum
 Galleries: data/concerns/tourism/gallery
 Zoos: data/concerns/tourism/zoo
 Aquariums: data/concerns/tourism/aquarium
-Parks: data/concerns/leisure/park
 Theme parks: data/concerns/tourism/theme_park
+Tourist Attractions: data/concerns/tourism/attraction
+Viewpoints: data/concerns/tourism/viewpoint
+
+# ── Historic & Heritage ──────────────────────────────────────────────────────
 Castles: data/concerns/historic/castle
-Bars: data/concerns/amenity/bar
-Cafes: data/concerns/amenity/cafe
-Burger shops: data/concerns/amenity/fast_food/cuisine/burger
-Pizza shops: data/concerns/amenity/fast_food/cuisine/pizza
-Sushi shops: data/concerns/amenity/fast_food/cuisine/sushi
-Ramen shops: data/concerns/amenity/restaurant/cuisine/ramen
-Soba noodle shops: data/concerns/amenity/restaurant/cuisine/soba
+Memorials: data/concerns/historic/memorial
+Monuments: data/concerns/historic/monument
+Ruins: data/concerns/historic/ruins
+Archaeological Sites: data/concerns/historic/archaeological_site
+
+# ── Places of Worship ────────────────────────────────────────────────────────
 Churches: data/concerns/building/church
 Mosques: data/concerns/amenity/place_of_worship/religion/muslim
 Temples: data/concerns/amenity/place_of_worship/religion/buddhist
 Shrines: data/concerns/amenity/place_of_worship/religion/shinto
-University campuses: data/concerns/amenity/university
-Hospitals: data/concerns/amenity/hospital
-Embassies: data/concerns/office/diplomatic
-Shelters: data/concerns/amenity/shelter
+Hindu Temples: data/concerns/amenity/place_of_worship/religion/hindu
+Synagogues: data/concerns/amenity/place_of_worship/religion/jewish
