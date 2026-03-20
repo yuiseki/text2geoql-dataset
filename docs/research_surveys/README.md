@@ -16,6 +16,7 @@ LLM 研究コミュニティに広く共有できる知見は `docs/research_fin
 | [RS-003](RS-003-geospatial-code-llms.md) | 地理空間コード生成 LLM — GeoCode-GPT, geospatial-code-llms-dataset 等 |
 | [RS-004](RS-004-geospatial-qa-datasets.md) | 地理空間 QA データセット — GeoQuestions1089, MapEval, GeoLLM 等 |
 | [RS-005](RS-005-trident-origin.md) | TRIDENT — 本プロジェクトの中間言語の起源プロジェクト |
+| [RS-006](RS-006-osm-specific-nlp-llm.md) | OSM 特化 NLP/LLM 研究 — OsmT, SPOT v2, CHATMAP, WorldKG 等（検索調査済み） |
 
 ---
 
