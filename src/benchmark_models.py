@@ -1,18 +1,26 @@
 """Benchmark multiple Ollama model sizes for Overpass QL generation quality.
 
 Usage:
-    uv run python src/benchmark_models.py
-    uv run python src/benchmark_models.py --models qwen2.5-coder:0.5b qwen2.5-coder:1.5b
-    uv run python src/benchmark_models.py --trials 3 --data-dir ./data
+    # One model at a time (recommended — avoids long-running timeouts):
+    uv run python src/benchmark_models.py --models qwen2.5-coder:0.5b
+    uv run python src/benchmark_models.py --models qwen2.5-coder:1.5b
 
-Output: JSON report written to ./tmp/benchmark-{timestamp}.json
-        and a summary table printed to stdout.
+    # All default Qwen models in sequence:
+    uv run python src/benchmark_models.py
+
+    # Custom options:
+    uv run python src/benchmark_models.py --trials 3 --query-timeout 120
+
+Output:
+    Per-model JSON written immediately to tmp/benchmark-{slug}-{timestamp}.json
+    Summary table printed after each model completes.
 """
 
 import argparse
 import json
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,7 +30,7 @@ from generate_overpassql import build_prompt, generate_overpassql
 from meta import model_to_slug
 from overpass import fetch_elements
 
-# Candidate model sizes to probe (in ascending order)
+# Candidate model sizes to probe (Qwen family only; ascending parameter count)
 DEFAULT_MODELS = [
     "qwen2.5-coder:0.5b",
     "qwen2.5-coder:1.5b",
@@ -45,6 +53,7 @@ EVAL_INSTRUCTIONS = [
 REPO_ROOT = Path(__file__).parent.parent
 DEFAULT_DATA_DIR = str(REPO_ROOT / "data")
 DEFAULT_TMP_DIR = str(REPO_ROOT / "tmp")
+DEFAULT_QUERY_TIMEOUT = 90  # seconds per query (LLM + Overpass)
 
 
 def _is_model_available(model: str) -> bool:
@@ -57,6 +66,54 @@ def _is_model_available(model: str) -> bool:
         return False
 
 
+def _run_one_query(
+    instruct: str,
+    model: str,
+    data_dir: str,
+    temperature: float,
+    num_predict: int,
+) -> dict[str, object]:
+    """Run a single instruction through LLM + Overpass. Returns a result dict."""
+    t0 = time.monotonic()
+    prompt = build_prompt(instruct, data_dir)
+    query, failure_reason = generate_overpassql(
+        prompt, model=model, temperature=temperature, num_predict=num_predict
+    )
+    elapsed = time.monotonic() - t0
+
+    if query is None:
+        return {
+            "instruct": instruct,
+            "success": False,
+            "failure_reason": failure_reason,
+            "element_count": 0,
+            "elapsed_s": round(elapsed, 2),
+            "query": None,
+        }
+
+    try:
+        elements = fetch_elements(query)
+        n = len(elements)
+    except Exception as e:
+        return {
+            "instruct": instruct,
+            "success": False,
+            "failure_reason": f"api_error: {e}",
+            "element_count": 0,
+            "elapsed_s": round(elapsed, 2),
+            "query": query,
+        }
+
+    return {
+        "instruct": instruct,
+        "success": n > 0,
+        "failure_reason": "" if n > 0 else "zero_results",
+        "element_count": n,
+        "elapsed_s": round(elapsed, 2),
+        "query": query,
+    }
+
+
 def _probe_model(
     model: str,
     instructions: list[str],
@@ -64,77 +121,55 @@ def _probe_model(
     trials: int,
     temperature: float,
     num_predict: int,
+    query_timeout: int,
 ) -> dict:
-    """Run all eval instructions against one model and collect metrics."""
+    """Run all eval instructions against one model with per-query timeout."""
     results: list[dict[str, object]] = []
+
     for instruct in instructions:
         for trial in range(trials):
-            t0 = time.monotonic()
-            try:
-                prompt = build_prompt(instruct, data_dir)
-                query, failure_reason = generate_overpassql(
-                    prompt,
-                    model=model,
-                    temperature=temperature,
-                    num_predict=num_predict,
+            print(f"    [{trial+1}/{trials}] {instruct[:50]} ...", end=" ", flush=True)
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(
+                    _run_one_query, instruct, model, data_dir, temperature, num_predict
                 )
-                elapsed = time.monotonic() - t0
-
-                if query is None:
+                try:
+                    result = future.result(timeout=query_timeout)
+                    result["trial"] = trial
+                    results.append(result)
+                    status = "OK" if result["success"] else result["failure_reason"]
+                    print(f"{status} ({result['elapsed_s']}s)")
+                except FuturesTimeoutError:
+                    print(f"TIMEOUT (>{query_timeout}s)")
                     results.append({
                         "instruct": instruct,
                         "trial": trial,
                         "success": False,
-                        "failure_reason": failure_reason,
+                        "failure_reason": f"timeout_{query_timeout}s",
                         "element_count": 0,
-                        "elapsed_s": round(elapsed, 2),
+                        "elapsed_s": query_timeout,
                         "query": None,
                     })
-                    continue
-
-                try:
-                    elements = fetch_elements(query)
-                    n = len(elements)
                 except Exception as e:
+                    print(f"ERROR: {e}")
                     results.append({
                         "instruct": instruct,
                         "trial": trial,
                         "success": False,
-                        "failure_reason": f"api_error: {e}",
+                        "failure_reason": f"exception: {e}",
                         "element_count": 0,
-                        "elapsed_s": round(elapsed, 2),
-                        "query": query,
+                        "elapsed_s": 0,
+                        "query": None,
                     })
-                    continue
-
-                results.append({
-                    "instruct": instruct,
-                    "trial": trial,
-                    "success": n > 0,
-                    "failure_reason": "" if n > 0 else "zero_results",
-                    "element_count": n,
-                    "elapsed_s": round(elapsed, 2),
-                    "query": query,
-                })
-
-            except Exception as e:
-                elapsed = time.monotonic() - t0
-                results.append({
-                    "instruct": instruct,
-                    "trial": trial,
-                    "success": False,
-                    "failure_reason": f"exception: {e}",
-                    "element_count": 0,
-                    "elapsed_s": round(elapsed, 2),
-                    "query": None,
-                })
 
     total = len(results)
     success_count = sum(1 for r in results if r["success"] is True)
-    code_block_failures = sum(1 for r in results if r["failure_reason"] == "no_code_block")
+    no_code_block = sum(1 for r in results if r["failure_reason"] == "no_code_block")
     too_many_lines = sum(1 for r in results if r["failure_reason"] == "too_many_lines")
-    zero_results_count = sum(1 for r in results if r["failure_reason"] == "zero_results")
-    avg_elapsed = round(sum(r["elapsed_s"] for r in results if isinstance(r["elapsed_s"], (int, float))) / total, 2) if total else 0
+    zero_results = sum(1 for r in results if r["failure_reason"] == "zero_results")
+    timeouts = sum(1 for r in results if str(r.get("failure_reason", "")).startswith("timeout_"))
+    elapsed_values = [r["elapsed_s"] for r in results if isinstance(r["elapsed_s"], (int, float))]
+    avg_elapsed = round(sum(elapsed_values) / total, 2) if total else 0
 
     return {
         "model": model,
@@ -142,17 +177,22 @@ def _probe_model(
         "total": total,
         "success_count": success_count,
         "success_rate": round(success_count / total, 3) if total else 0,
-        "no_code_block": code_block_failures,
+        "no_code_block": no_code_block,
         "too_many_lines": too_many_lines,
-        "zero_results": zero_results_count,
+        "zero_results": zero_results,
+        "timeouts": timeouts,
         "avg_elapsed_s": avg_elapsed,
         "results": results,
     }
 
 
 def _print_summary(model_reports: list[dict]) -> None:
-    header = f"{'Model':<28} {'Success':>8} {'Rate':>6} {'NoBlock':>8} {'TooLong':>8} {'ZeroRes':>8} {'AvgSec':>7}"
-    print("\n" + "=" * len(header))
+    header = (
+        f"{'Model':<28} {'Success':>8} {'Rate':>6} "
+        f"{'NoBlock':>8} {'TooLong':>8} {'ZeroRes':>8} {'Timeout':>8} {'AvgSec':>7}"
+    )
+    sep = "=" * len(header)
+    print("\n" + sep)
     print(header)
     print("-" * len(header))
     for r in model_reports:
@@ -163,9 +203,10 @@ def _print_summary(model_reports: list[dict]) -> None:
             f"{r['no_code_block']:>8} "
             f"{r['too_many_lines']:>8} "
             f"{r['zero_results']:>8} "
+            f"{r.get('timeouts', 0):>8} "
             f"{r['avg_elapsed_s']:>7.1f}s"
         )
-    print("=" * len(header))
+    print(sep)
 
 
 def run_benchmark(
@@ -175,17 +216,21 @@ def run_benchmark(
     trials: int = 1,
     temperature: float = 0.01,
     num_predict: int = 256,
+    query_timeout: int = DEFAULT_QUERY_TIMEOUT,
     skip_unavailable: bool = True,
 ) -> dict:
     if models is None:
         models = DEFAULT_MODELS
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+    os.makedirs(tmp_dir, exist_ok=True)
+
     report: dict = {
         "benchmark_at": datetime.now(timezone.utc).isoformat(),
         "trials_per_instruction": trials,
         "temperature": temperature,
         "num_predict": num_predict,
+        "query_timeout_s": query_timeout,
         "instructions": EVAL_INSTRUCTIONS,
         "models": [],
     }
@@ -195,7 +240,8 @@ def run_benchmark(
             print(f"[SKIP] {model} — not pulled locally")
             continue
 
-        print(f"\n[RUN]  {model} ({trials} trial(s) × {len(EVAL_INSTRUCTIONS)} instructions) ...")
+        n_queries = trials * len(EVAL_INSTRUCTIONS)
+        print(f"\n[RUN]  {model}  ({n_queries} queries, timeout {query_timeout}s each)")
         model_report = _probe_model(
             model=model,
             instructions=EVAL_INSTRUCTIONS,
@@ -203,31 +249,49 @@ def run_benchmark(
             trials=trials,
             temperature=temperature,
             num_predict=num_predict,
+            query_timeout=query_timeout,
         )
         report["models"].append(model_report)
-        print(f"       success {model_report['success_count']}/{model_report['total']}  "
-              f"avg {model_report['avg_elapsed_s']}s/query")
 
-    _print_summary(report["models"])
+        # Save per-model result immediately so progress is preserved
+        slug = model_to_slug(model)
+        model_path = os.path.join(tmp_dir, f"benchmark-{slug}-{timestamp}.json")
+        with open(model_path, "w") as f:
+            json.dump(model_report, f, indent=2, ensure_ascii=False)
+        print(f"       -> saved: {model_path}")
 
-    os.makedirs(tmp_dir, exist_ok=True)
-    out_path = os.path.join(tmp_dir, f"benchmark-{timestamp}.json")
-    with open(out_path, "w") as f:
+        _print_summary(report["models"])
+
+    # Also save the full aggregate report
+    full_path = os.path.join(tmp_dir, f"benchmark-all-{timestamp}.json")
+    with open(full_path, "w") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
-    print(f"\nReport saved to: {out_path}")
+    print(f"\nFull report: {full_path}")
 
     return report
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--models", nargs="+", default=None, help="Model names to benchmark (default: all qwen2.5-coder sizes)")
-    parser.add_argument("--data-dir", default=DEFAULT_DATA_DIR, help="Path to data dir with few-shot examples")
-    parser.add_argument("--tmp-dir", default=DEFAULT_TMP_DIR, help="Directory to write the JSON report")
-    parser.add_argument("--trials", type=int, default=1, help="Trials per instruction per model (default: 1)")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--models", nargs="+", default=None,
+        help="Model name(s) to benchmark (default: all Qwen series)"
+    )
+    parser.add_argument("--data-dir", default=DEFAULT_DATA_DIR)
+    parser.add_argument("--tmp-dir", default=DEFAULT_TMP_DIR)
+    parser.add_argument("--trials", type=int, default=1, help="Trials per instruction (default: 1)")
     parser.add_argument("--temperature", type=float, default=0.01)
     parser.add_argument("--num-predict", type=int, default=256)
-    parser.add_argument("--include-unavailable", action="store_true", help="Attempt models not yet pulled (will error)")
+    parser.add_argument(
+        "--query-timeout", type=int, default=DEFAULT_QUERY_TIMEOUT,
+        help=f"Seconds to wait per query before marking as timeout (default: {DEFAULT_QUERY_TIMEOUT})"
+    )
+    parser.add_argument(
+        "--include-unavailable", action="store_true",
+        help="Attempt models not yet pulled locally (will error)"
+    )
     args = parser.parse_args()
 
     run_benchmark(
@@ -237,6 +301,7 @@ def main() -> None:
         trials=args.trials,
         temperature=args.temperature,
         num_predict=args.num_predict,
+        query_timeout=args.query_timeout,
         skip_unavailable=not args.include_unavailable,
     )
 
