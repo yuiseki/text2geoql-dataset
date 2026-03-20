@@ -93,7 +93,17 @@ MODEL_GROUPS: dict[str, list[str]] = {
     "gpt-oss": [
         "gpt-oss:20b",
         "gpt-oss-128k:20b",
+        "gpt-oss-safeguard:20b",
         "gpt-oss:120b",
+    ],
+    # Cross-family group: 20b–24b class models to assess GPU inference performance
+    "large-class": [
+        "gpt-oss:20b",
+        "gpt-oss-128k:20b",
+        "gpt-oss-safeguard:20b",
+        "mistral-small3.2:24b",
+        "devstral-small-2:24b",
+        "gemma3:27b",
     ],
 }
 
