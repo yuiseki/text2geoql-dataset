@@ -1,8 +1,8 @@
 # Research Findings
 
-This directory contains focused research finding documents from benchmark experiments and investigations.
+This directory contains findings from benchmark experiments that are broadly applicable to Few-Shot LLM prompting and Overpass QL generation — insights worth sharing with the wider LLM/NLP research community.
 
-Each RF document captures a specific discovery with enough detail to inform future design decisions and fine-tuning strategies.
+Project-specific bug fixes and dataset-specific investigations are tracked separately in [`docs/project-notes/`](../project-notes/).
 
 ## Index
 
@@ -10,12 +10,8 @@ Each RF document captures a specific discovery with enough detail to inform futu
 |----|-------|--------|------|
 | [RF-001](RF-001-num-ctx-context-window-effect.md) | num_ctx (Context Window Size) Effect on Few-Shot Quality | Confirmed | 2026-03-20 |
 | [RF-002](RF-002-few-shot-k-model-size-dependency.md) | Few-Shot k (Number of Examples) Depends on Model Size | Confirmed | 2026-03-20 |
-| [RF-003](RF-003-case-insensitive-concern-matching.md) | Case-Insensitive Concern Matching Bug Fix | Fixed | 2026-03-20 |
-| [RF-004](RF-004-convenience-stores-hotels-failure-analysis.md) | Convenience Stores and Hotels Failure Analysis | Root cause identified | 2026-03-20 |
 
 ## Key Takeaways
 
-1. **gemma3:12b + `--num-ctx 32768`** → 100% success rate (new best)
-2. **k=6** only helps models ≥ 8B; degrades ≤ 3B models
-3. **Case-insensitive matching** is required for concern names with variant capitalization
-4. **Tag namespace mismatch** (`shop=*`, `tourism=*` vs intuitive `amenity=*`) is a persistent failure mode when Few-Shot context is truncated
+1. **Context window size (`num_ctx`) is a critical inference-time hyperparameter for Few-Shot quality** — models with truncated prompts fail to learn correct output patterns even if the dataset is correct. Each model family has a sweet spot (e.g., gemma3:12b → 32768, gpt-oss:20b → 128000).
+2. **Optimal k (number of Few-Shot examples) depends on model size** — larger examples budgets help large models but hurt small ones, with a clear breakpoint around 7–8B parameters.
