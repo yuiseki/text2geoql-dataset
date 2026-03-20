@@ -15,6 +15,10 @@ dependencies = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+addopts = "-m 'not e2e'"
+markers = [
+    "e2e: end-to-end tests that call real Ollama and Overpass API (deselect with '-m not e2e')",
+]
 
 [tool.mypy]
 ignore_missing_imports = true

@@ -125,7 +125,7 @@ def save_overpassql(overpassql: str, base_path: str, tmp_root: str = "./tmp") ->
         f.write(overpassql + "\n")
 
 
-def run(base_path: str, data_dir: str = "./data", tmp_root: str = "./tmp") -> None:
+def run(base_path: str, data_dir: str = "./data", tmp_root: str = "./tmp", model: str = OLLAMA_MODEL) -> None:
     """Main generation pipeline for a single TRIDENT directory."""
     print("")
     print("base_path:", base_path)
@@ -146,7 +146,7 @@ def run(base_path: str, data_dir: str = "./data", tmp_root: str = "./tmp") -> No
 
     query_hash_tmp = hashlib.md5(b"").hexdigest()  # placeholder until we have the query
     prompt = build_prompt(instruct, data_dir)
-    overpassql = generate_overpassql(prompt)
+    overpassql = generate_overpassql(prompt, model=model)
 
     if overpassql is None:
         print("OverpassQL is not valid!")
