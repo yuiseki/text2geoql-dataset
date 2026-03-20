@@ -5,72 +5,126 @@ Accepted
 
 ## コンテキスト
 
-text2geoql-dataset はテキストから Overpass QL クエリへの変換のための学習データを生成するシステムである。入力となる「地理空間クエリの意図」を表現するにあたって、以下の選択肢があった：
+### TRIDENT システムとは
 
-1. **自然言語をそのまま入力とする**: "Show me cafes in Shinjuku, Tokyo" のような文
-2. **構造化 JSON/YAML**: `{"type": "amenity", "value": "cafe", "area": "Shinjuku, Tokyo, Japan"}`
-3. **TRIDENT 形式**: `AreaWithConcern: Shinjuku, Tokyo, Japan; Cafes`
+**TRIDENT** は、自然言語の対話から OpenStreetMap のインタラクティブ地図を生成する AI システムである（[リポジトリ](https://github.com/yuiseki/TRIDENT)）。ユーザーが「新宿のカフェを見せて」と言うと、TRIDENT は Overpass API でデータを取得し、地図上に可視化する。
 
-自然言語は表現のブレが大きく（「カフェ」「喫茶店」「coffee shop」など）、LLM による生成やデータセットの管理が困難になる。一方で完全な構造化 JSON はファイルパスや管理が重くなる。
+TRIDENT のアーキテクチャは**三層構造**に分解されている：
 
-また、データセットのファイルシステム上の整理（どのディレクトリにどのファイルを置くか）と、LLM への入力フォーマットを統一する必要があった。
+```
+Surface layer（表層）
+  役割: ユーザーとの対話を管理し、地図生成が可能なリクエストかを判断する
+  入力: 自然言語
+  出力: ability（"overpass-api" / "ask-more" / "apology"）+ 応答メッセージ
+  ↓
+Inner layer（中層）
+  役割: 対話履歴を分析し、TRIDENT 中間言語を記述する
+  入力: 対話履歴
+  出力: TRIDENT 中間言語表現
+  ↓
+Deep layer（深層）
+  役割: TRIDENT 中間言語を読み取り、Overpass QL を記述する
+  入力: TRIDENT 中間言語表現
+  出力: Overpass QL クエリ
+  ↓
+Overpass API → GeoJSON → インタラクティブ地図
+```
+
+### なぜ三層に分解したか
+
+この設計は **text-davinci-003 時代の制約**から生まれた。GPT-3.5-turbo 以前の弱いモデルでも動かす必要があり、「自然言語 → Overpass QL」を一度に解かせると精度が出なかった。タスクを三つの単純なサブ問題に分割し、それぞれを Few-Shot 例で誘導することで実現した。
+
+現在のフロンティアモデルではこの分業は不要だが、以下の環境ではいまだに実用的である：
+- エアギャップ環境（インターネット接続なし）
+- Raspberry Pi 4B（8 GB RAM）などの極度にリソース制約された環境
+
+### text2geoql-dataset の役割
+
+このリポジトリは **Deep layer の特化型 Fine-tuning** を目的としている。≤ 1.1B パラメータの超小型 LLM を「TRIDENT 中間言語 → Overpass QL」タスクに特化して訓練することで、Raspberry Pi 4B 上でも TRIDENT Deep layer が動作するモデルを作ることが野心的な目標である。
+
+---
 
 ## 決定
 
-**TRIDENT（Text Representation for Instructed Dataset ENTries）形式** を中間表現として採用する。
+**TRIDENT 中間言語の `AreaWithConcern` 形式**をこのデータセットの入力表現として採用する。
 
-TRIDENT は以下の 3 種類の命令タイプを持つ：
+### TRIDENT 中間言語の完全なフォーマット
+
+Inner layer が出力する中間言語は以下の構造を持つ：
 
 ```
-# 地名 × 関心事の組み合わせ（最も頻出）
-AreaWithConcern: <地名（小→大の順）>; <関心事>
-例: AreaWithConcern: Shinjuku, Tokyo, Japan; Cafes
-
-# 地名のみ（行政区域の探索用）
-Area: <地名（小→大の順）>
-例: Area: Taito, Tokyo, Japan
-
-# サブエリア展開（行政区域の下位探索用）
-SubArea: <地名>
-例: SubArea: Tokyo, Japan
+ConfirmHelpful: [ユーザーの言語での確認メッセージ]
+TitleOfMap: [地図のタイトル]
+Area: [地名（小→大の順）]
+AreaWithConcern: [地名（小→大の順）]; [関心事]
+EmojiForConcern: [関心事], [絵文字]
+ColorForConcern: [関心事], [色名]
 ```
 
-**構文規則：**
-- 地名は「最小単位, ..., 国名」の順（人間の読みやすさ優先）
-- ファイルパスは逆順（`Japan/Tokyo/Shinjuku/`）で階層を表す
-- セミコロンで地名と関心事を区切る
-- パース関数は `src/trident.py` に集約（純粋関数）
+具体例：
+
+```
+ConfirmHelpful: 地図を作成しました。他にご要望はありますか？
+TitleOfMap: 東京のラーメン店
+Area: Taito, Tokyo
+Area: Bunkyo, Tokyo
+AreaWithConcern: Taito, Tokyo; Ramen shops
+AreaWithConcern: Bunkyo, Tokyo; Ramen shops
+EmojiForConcern: Ramen shops, 🍜
+ColorForConcern: Ramen shops, lightyellow
+```
+
+### このデータセットが扱う行
+
+このデータセットは中間言語全体ではなく、Deep layer への入力となる**2種類の行**を扱う：
+
+| 行タイプ | 例 | 用途 |
+|---------|----|----|
+| `AreaWithConcern: <地名>; <関心事>` | `AreaWithConcern: Shinjuku, Tokyo, Japan; Cafes` | POI クエリの大半 |
+| `Area: <地名>` | `Area: Taito, Tokyo, Japan` | 行政区域の境界クエリ |
+
+### TRIDENT ファイルの命名
+
+このリポジトリでは上記の行を `input-trident.txt` として保存する。"TRIDENT" はこのフォーマットの出所（TRIDENT システムの Inner layer）を明示するための命名である。
+
+### パース関数（`src/trident.py`）
+
+```python
+parse_filter_type(instruct)    # "AreaWithConcern" / "Area" / "SubArea"
+parse_filter_concern(instruct) # "Cafes", "Ramen shops", ...
+parse_filter_area(instruct)    # "Shinjuku"（最小地名単位）
+area_path_from_trident(inst)   # "Japan/Tokyo/Shinjuku"（ファイルパス用逆順）
+```
 
 ## 根拠
 
-- **機械可読性と人間可読性の両立**: TRIDENT は構造化されているが、プレーンテキストとして自然に読める
+- **既存システムとの一貫性**: TRIDENT Inner layer がすでにこの形式を出力している。新しいフォーマットを設計する必要がない
 - **LLM への Few-Shot 例として使いやすい**: 1行で完結するため、プロンプトに多数の例を埋め込める
-- **ファイルシステムとのマッピングが容易**: `area_path_from_trident()` で地名部分を逆転してディレクトリパスに変換できる
-- **パースが単純**: Python の `split(": ", 1)` と `split("; ", 1)` だけで分解できる
-- **拡張性**: 新しい命令タイプを追加しても既存のパーサーに影響しない
+- **ファイルシステムとのマッピングが容易**: 地名部分を逆転してディレクトリパスに変換できる（ADR-004）
+- **パースが単純**: `split(": ", 1)` と `split("; ", 1)` で分解できる。LLM 時代以前の単純なパーサーで扱える
+- **Fine-tuning のターゲットが明確**: `input-trident.txt` → `output-*.overpassql` の 1:1 対応が Fine-tuning の訓練ペアになる
 
 ## 結果
 
 **ポジティブ：**
-- データセットの各エントリが `input-trident.txt` 1ファイルで完結し、管理が容易
 - `src/trident.py` の純粋関数群は副作用なしで完全にユニットテスト可能
-- Few-Shot プロンプトに自然に組み込める（`Input:\n{trident}\n\nOutput:\n```\n{overpassql}\n```)`
+- Few-Shot プロンプトに自然に組み込める
 - `generate_trident.py` による自動生成（地名 × 関心事のクロスプロダクト）が可能
 
 **ネガティブ：**
-- 独自フォーマットのため、外部システムとの連携には変換レイヤーが必要
-- 地名の表記ゆれ（"Shinjuku" vs "新宿"）はこのフォーマットでは解決できない（→ ADR-007 で Nominatim を使った名寄せで対応予定）
-- 現在は英語地名のみを想定しており、他言語対応は未検討
+- 地名の表記ゆれ（"Shinjuku" vs "新宿"）はこのフォーマットでは解決できない（→ ADR-007 で Nominatim により対応予定）
+- 自然言語概念の曖昧さ（「病院」= hospital + clinic + doctors）はこの形式では表現できない（→ ADR-009）
+- 現在は英語地名・英語関心事名のみを想定しており、他言語対応は未検討
 
 ## 補足
 
 実装: `src/trident.py`
 テスト: `tests/test_trident.py`
+TRIDENT リポジトリ: https://github.com/yuiseki/TRIDENT
 
-`area_path_from_trident()` の地名逆転ロジック：
+地名逆転ロジック（`area_path_from_trident`）：
 ```
 "Shinjuku, Tokyo, Japan"
-→ split by ", "
 → ["Shinjuku", "Tokyo", "Japan"]
 → reversed → ["Japan", "Tokyo", "Shinjuku"]
 → os.path.join → "Japan/Tokyo/Shinjuku"
