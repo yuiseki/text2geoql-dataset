@@ -55,6 +55,32 @@ Examples:\
 """
 
 
+def example_matches(
+    input_txt: str,
+    filter_type: str,
+    filter_concern: str,
+) -> bool:
+    """Return True if input_txt is a valid Few-Shot example for the given filters.
+
+    Concern matching is case-insensitive to handle capitalisation variants
+    (e.g. 'Convenience Stores' vs 'Convenience stores').
+
+    >>> example_matches("AreaWithConcern: Taito, Tokyo, Japan; Cafes", "AreaWithConcern", "Cafes")
+    True
+    >>> example_matches("AreaWithConcern: Taito, Tokyo, Japan; Convenience stores", "AreaWithConcern", "Convenience Stores")
+    True
+    >>> example_matches("AreaWithConcern: Taito, Tokyo, Japan; Cafes", "AreaWithConcern", "Hotels")
+    False
+    >>> example_matches("Area: Taito, Tokyo, Japan", "AreaWithConcern", "Cafes")
+    False
+    """
+    if not input_txt.startswith(filter_type):
+        return False
+    if filter_concern.lower() not in input_txt.lower():
+        return False
+    return True
+
+
 def load_examples_for_instruct(
     data_dir: str,
     filter_type: str,
@@ -69,14 +95,12 @@ def load_examples_for_instruct(
         if "input-trident.txt" not in files:
             continue
         input_txt = open(os.path.join(root, "input-trident.txt")).read().strip()
-        if not input_txt.startswith(filter_type):
+        if not example_matches(input_txt, filter_type, filter_concern):
             continue
         if filter_area in input_txt:
             filtered_area_count += 1
             if filtered_area_count > max_area_examples:
                 continue
-        if filter_concern not in input_txt:
-            continue
         output_files = [f for f in files if f.startswith("output-") and f.endswith(".overpassql")]
         for output_file in output_files:
             output_txt = open(os.path.join(root, output_file)).read().strip()
@@ -88,7 +112,7 @@ def build_prompt(instruct: str, data_dir: str) -> str:
     """Build a few-shot prompt for the given TRIDENT instruction."""
     embeddings = OllamaEmbeddings(model=EMBED_MODEL)
     vectorstore = Chroma("langchain_store", embeddings)
-    example_selector = SemanticSimilarityExampleSelector(vectorstore=vectorstore, k=4)
+    example_selector = SemanticSimilarityExampleSelector(vectorstore=vectorstore, k=6)
 
     load_examples_for_instruct(
         data_dir=data_dir,

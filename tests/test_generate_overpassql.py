@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 from unittest.mock import patch
 
-from generate_overpassql import generate_overpassql, save_overpassql
+from generate_overpassql import example_matches, generate_overpassql, save_overpassql
 from meta import GenerationMeta
 
 
@@ -40,6 +40,42 @@ class TestGenerateOverpassql:
         with patch("generate_overpassql.ollama.generate", return_value={"response": llm_output}) as mock_gen:
             generate_overpassql("prompt", model="custom-model:7b")
         assert "custom-model:7b" in str(mock_gen.call_args)
+
+
+class TestExampleMatches:
+    """Tests for the example_matches pure function."""
+
+    def test_exact_match(self) -> None:
+        assert example_matches(
+            "AreaWithConcern: Taito, Tokyo, Japan; Cafes",
+            "AreaWithConcern", "Cafes"
+        )
+
+    def test_case_insensitive_concern_uppercase_query(self) -> None:
+        """'Convenience Stores' (uppercase S) matches dataset entry 'Convenience stores'."""
+        assert example_matches(
+            "AreaWithConcern: Taito, Tokyo, Japan; Convenience stores",
+            "AreaWithConcern", "Convenience Stores"
+        )
+
+    def test_case_insensitive_concern_lowercase_query(self) -> None:
+        """'convenience stores' (all lower) matches dataset entry 'Convenience Stores'."""
+        assert example_matches(
+            "AreaWithConcern: Taito, Tokyo, Japan; Convenience Stores",
+            "AreaWithConcern", "convenience stores"
+        )
+
+    def test_unrelated_concern_not_matched(self) -> None:
+        assert not example_matches(
+            "AreaWithConcern: Taito, Tokyo, Japan; Cafes",
+            "AreaWithConcern", "Hotels"
+        )
+
+    def test_wrong_filter_type_not_matched(self) -> None:
+        assert not example_matches(
+            "Area: Taito, Tokyo, Japan",
+            "AreaWithConcern", "Cafes"
+        )
 
 
 class TestSaveOverpassql:
