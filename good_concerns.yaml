@@ -5,6 +5,8 @@ Train Stations: data/concerns/railway/station
 Bus Stations: data/concerns/amenity/bus_station
 
 # ── Accommodation ────────────────────────────────────────────────────────────
+# Composite: 「宿泊施設」= hotel + guest_house + hostel (see ADR-009)
+Accommodation: data/concerns/accommodation/all
 Hotels: data/concerns/tourism/hotel
 Guest Houses: data/concerns/tourism/guest_house
 Hostels: data/concerns/tourism/hostel
@@ -47,11 +49,16 @@ Bicycle shops: data/concerns/shop/bicycle
 Laundromats: data/concerns/shop/laundry
 
 # ── Health & Medical ─────────────────────────────────────────────────────────
+# Composite broad: 「病院」(Japanese sense) = hospital + clinic + doctors (see ADR-009)
+Medical Facilities: data/concerns/medical/all
+# Composite: hospital only, covering amenity= and healthcare= namespaces
 Hospitals: data/concerns/amenity/hospital
-Clinics: data/concerns/amenity/clinic
-Pharmacies: data/concerns/amenity/pharmacy
+# Composite: clinic + doctors union, covering amenity= and healthcare= namespaces
+Clinics and Doctors: data/concerns/medical/clinic_and_doctor
+# Composite: 「薬局」= amenity=pharmacy + healthcare=pharmacy (see ADR-009)
+Pharmacies: data/concerns/medical/pharmacy
+# Dentists: sufficiently specific, single concept
 Dentists: data/concerns/amenity/dentist
-Doctors: data/concerns/amenity/doctors
 
 # ── Education ────────────────────────────────────────────────────────────────
 University campuses: data/concerns/amenity/university
