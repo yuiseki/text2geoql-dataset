@@ -1,6 +1,6 @@
 # RF-004: LoRA Fine-Tuning Eliminates Few-Shot Prompting Need
 
-**Date:** 2026-03-21
+**Date:** 2026-03-21 (updated 2026-03-22 with v3)
 **Status:** Confirmed
 **Related ADR:** ADR-003 (LLM Few-Shot), ADR-006 (Benchmark)
 
@@ -189,6 +189,41 @@ On the 30-sample evaluation, all three models tied at **93.3% (28/30)**. On the 
 | Qwen2.5-Coder-0.5B-Instruct | 494M | **95.1% (215/226)** |
 | functiongemma-270m-it | 270M | **94.7% (214/226)** |
 | gemma-3-270m-it | 270M | **94.2% (213/226)** |
+
+## v3 Results (zero-count pruned dataset, 4,217 pairs)
+
+v3 retraining was performed on the dataset after pruning zero-count tag×area pairs
+(removed 287 pairs; from 4,504 → 4,217). All other hyperparameters unchanged.
+
+| Model | v2 score | v3 score | Δ |
+|-------|----------|----------|---|
+| Qwen2.5-Coder-0.5B-Instruct | 95.1% (215/226) | **90.3% (204/226)** | -4.8% |
+| functiongemma-270m-it | 94.7% (214/226) | **89.8% (203/226)** | -4.9% |
+| gemma-3-270m-it | 94.2% (213/226) | **89.4% (202/226)** | -4.8% |
+
+### v3 Training metrics
+
+| Model | train_loss | eval_loss | token_acc |
+|-------|-----------|-----------|-----------|
+| Qwen2.5-Coder-0.5B | 0.1418 | 0.0825 | 97.81% |
+| gemma-3-270m | 0.2978 | 0.0984 | 97.15% |
+| functiongemma-270m | 0.3051 | 0.0954 | 97.26% |
+
+### v3 Regression analysis
+
+All three models dropped ~5% uniformly despite only a 6% reduction in training pairs.
+The most likely explanation is **holdout set shift**: the val split (seed=42, 5%) now
+contains a different 226-pair sample after pruning. Pairs removed by pruning include
+zero-count tag×area combinations that may have been "easy" passes (zero-results pairs
+are `pass` because `zero_results` is a valid outcome — see evaluate.py). Pruning these
+from training means the model has less signal for zero-results scenarios. Additionally,
+if previously easy zero-count pairs were in the val set, their removal makes the holdout
+harder on average.
+
+**Conclusion**: v3 pruning did not improve model accuracy on the held-out benchmark.
+The ~5% regression warrants investigation before adopting the pruned dataset as training
+data. Re-evaluating all three models on the original v2 holdout (fixed 226 pairs) would
+give a fair comparison.
 
 The differences are small (2 samples between first and third) and all fall within
 Overpass API variance. The practical ceiling is set by OSM data quality, not model
