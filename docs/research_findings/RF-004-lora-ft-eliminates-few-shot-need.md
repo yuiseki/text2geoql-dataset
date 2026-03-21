@@ -56,9 +56,11 @@ The open question was: can a sub-1B model serve the Deep Layer if fine-tuned on 
 | After LoRA FT (v1) | gemma-3-270m-it | 270M | original | none | 96.7% (29/30)* |
 | After LoRA FT (v1) | functiongemma-270m-it | 270M | original | none | 93.3% (28/30) |
 | **After LoRA FT (v2)** | **Qwen2.5-Coder-0.5B-Instruct** | **494M** | **church-fixed** | **none** | **93.3% (28/30)** |
+| **After LoRA FT (v2)** | **Qwen2.5-Coder-0.5B-Instruct** | **494M** | **church-fixed** | **none** | **95.1% (215/226) full holdout** |
 | **After LoRA FT (v2)** | **gemma-3-270m-it** | **270M** | **church-fixed** | **none** | **93.3% (28/30)** |
 | **After LoRA FT (v2)** | **gemma-3-270m-it** | **270M** | **church-fixed** | **none** | **94.2% (213/226) full holdout** |
 | **After LoRA FT (v2)** | **functiongemma-270m-it** | **270M** | **church-fixed** | **none** | **93.3% (28/30)** |
+| **After LoRA FT (v2)** | **functiongemma-270m-it** | **270M** | **church-fixed** | **none** | **94.7% (214/226) full holdout** |
 
 \* v1 gemma-3-270m 96.7% reflects transient Overpass API variance on the Islands District→Embassies
 borderline case (no embassies exist there; the query occasionally returns results from broader HK area).
@@ -114,19 +116,26 @@ Both models internalized OSM tag knowledge (e.g. `amenity=convenience_store`,
 `tourism=hotel`, multi-area `area["name:en"=...]` filter patterns) directly into weights.
 The system prompt is a single sentence with no examples.
 
-### 2. All three sub-500M models converge to the same ceiling
+### 2. 30-sample ceiling is identical; full holdout reveals ordering
 
-After retraining on the corrected dataset (v2), all three models — Qwen2.5-Coder-0.5B
-(494M), gemma-3-270m-it (270M), and functiongemma-270m-it (270M) — achieve exactly
-**93.3% (28/30)** with identical failure cases:
+On the 30-sample evaluation, all three models tied at **93.3% (28/30)**. On the full
+226-sample holdout, a consistent ordering emerges:
 
-1. `Islands District, Hong Kong → Embassies` — no diplomatic offices in this rural island
-   district (genuine POI absence)
-2. `Suminoe Ward, Osaka → Churches` — no churches tagged in OSM for this ward (genuine
-   data absence, even with the correct union query)
+| Model | Params | Full holdout (226) |
+|-------|--------|--------------------|
+| Qwen2.5-Coder-0.5B-Instruct | 494M | **95.1% (215/226)** |
+| functiongemma-270m-it | 270M | **94.7% (214/226)** |
+| gemma-3-270m-it | 270M | **94.2% (213/226)** |
 
-Both remaining failures are irreducible given current OSM data. The practical ceiling
-for this holdout set is **93.3%**, and all three models have reached it.
+The differences are small (2 samples between first and third) and all fall within
+Overpass API variance. The practical ceiling is set by OSM data quality, not model
+capability — all failures are either genuine POI absence, `name:en` resolution gaps,
+or POI scarcity, none attributable to model error.
+
+Notably, functiongemma-270m slightly outperforms gemma-3-270m on the full holdout,
+suggesting that function-calling specialization (structured output priors) provides
+a marginal advantage for OverpassQL generation — the opposite of the initial hypothesis
+in RD-002 that it might hurt. The margin is too small to be conclusive.
 
 The v1 gemma-3-270m result of 96.7% was due to transient Overpass API variance: the
 Islands District query occasionally returns results from the broader Hong Kong area,
@@ -135,9 +144,10 @@ API introduces variance on borderline POI-existence cases.
 
 ### 3. Current dataset scale is sufficient
 
-Both models exceed 93% accuracy on 4504 pairs. Scaling to more pairs is unlikely to improve
-results significantly; quality improvement (fixing tag errors like `building=church` →
-`amenity=place_of_worship`) may eliminate the remaining failures.
+All three models exceed 94% accuracy on 4504 pairs. Scaling to more pairs is unlikely to
+improve results significantly; quality improvement (fixing tag errors, removing unrealistic
+concern types) and infrastructure-layer fixes (`name:en` two-call fallback) address the
+remaining failures more directly than adding more training pairs.
 
 ### 4. Sub-1B models are viable for TRIDENT Deep Layer
 
@@ -145,8 +155,9 @@ results significantly; quality improvement (fixing tag errors like `building=chu
 |-------|-----------------|--------------|---------------|
 | Qwen2.5-Coder-0.5B | ~1 GB | 35 MB | ~12 min |
 | gemma-3-270m-it | ~0.6 GB | ~20 MB | ~11 min |
+| functiongemma-270m-it | ~0.6 GB | ~20 MB | ~11 min |
 
-Both fit on Raspberry Pi 5 (8 GB RAM) with CPU inference. No Few-Shot prompt overhead —
+All fit on Raspberry Pi 5 (8 GB RAM) with CPU inference. No Few-Shot prompt overhead —
 lower latency, simpler runtime.
 
 ### 5. No prompt engineering required
