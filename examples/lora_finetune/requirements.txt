@@ -1,0 +1,7 @@
+accelerate>=1.13.0
+datasets>=4.8.3
+httpx>=0.27.0
+peft>=0.18.1
+torch>=2.4.0
+transformers>=4.46.0
+trl>=0.29.1
