@@ -3,5 +3,6 @@ area["name:en"="Fukuoka"]->.outer;
 area["name:en"="Sawara Ward"]->.inner;
 (
   nwr["building"="church"](area.inner)(area.outer);
+  nwr["amenity"="place_of_worship"]["religion"="christian"](area.inner)(area.outer);
 );
 out geom;
