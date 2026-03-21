@@ -93,6 +93,28 @@ def build_area_hint(area_id: int, area_name: str) -> str:
     )
 
 
+def add_area_comment(query: str, area_id: int, area_name: str) -> str:
+    """Add the area name as a // comment on the area(id:...) line.
+
+    This embeds the place name in the saved OverpassQL so that fine-tuning
+    pairs expose the area name ↔ relation ID association to the model.
+    Even if the model cannot generalize arbitrary IDs, seeing the name and
+    the ID co-occurring on the same line creates an internal association
+    that may improve accuracy for frequent locations.
+
+    >>> q = "area(id:3601758858)->.searchArea;"
+    >>> add_area_comment(q, 3601758858, "Shinjuku, Tokyo, Japan")
+    'area(id:3601758858)->.searchArea; // Shinjuku, Tokyo, Japan'
+    >>> add_area_comment("area[\\"name\\"=\\"Tokyo\\"]->.inner;", 3601758858, "Tokyo")
+    'area[\\"name\\"=\\"Tokyo\\"]->.inner;'
+    """
+    return re.sub(
+        rf'(area\(id:{area_id}\)[^;\n]*;)',
+        rf'\1 // {area_name}',
+        query,
+    )
+
+
 def fix_area_id_syntax(query: str) -> str:
     """Correct the common LLM mistake of area[id:X] → area(id:X).
 
@@ -232,6 +254,11 @@ def run_v2(
 
     # Post-process: fix area[id:X] → area(id:X) if LLM used wrong syntax
     overpassql = fix_area_id_syntax(overpassql)
+
+    # Embed area name as comment for fine-tuning co-occurrence learning
+    if area_id is not None:
+        area_name = parse_full_area(instruct)
+        overpassql = add_area_comment(overpassql, area_id, area_name)
 
     print("Generated OverpassQL:\n===")
     print(overpassql)

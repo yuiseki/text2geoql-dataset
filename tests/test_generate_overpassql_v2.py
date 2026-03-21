@@ -104,7 +104,7 @@ def test_build_area_hint_includes_syntax_snippet():
 # ── fix_area_id_syntax ────────────────────────────────────────────────────────
 
 
-from generate_overpassql_v2 import fix_area_id_syntax
+from generate_overpassql_v2 import fix_area_id_syntax, add_area_comment
 
 
 def test_fix_area_id_syntax_corrects_bracket_form():
@@ -123,6 +123,73 @@ def test_fix_area_id_syntax_leaves_correct_form_unchanged():
 def test_fix_area_id_syntax_no_area_id():
     query = "area[\"name\"=\"Tokyo\"]->.inner;\nnwr[\"amenity\"=\"cafe\"](area.inner);"
     assert fix_area_id_syntax(query) == query
+
+
+# ── add_area_comment ──────────────────────────────────────────────────────────
+
+
+def test_add_area_comment_basic():
+    query = "area(id:3601758858)->.searchArea;\nnwr[\"amenity\"=\"cafe\"](area.searchArea);"
+    result = add_area_comment(query, 3601758858, "Shinjuku, Tokyo, Japan")
+    assert "// Shinjuku, Tokyo, Japan" in result
+    assert "area(id:3601758858)" in result
+
+
+def test_add_area_comment_placed_on_same_line():
+    """Comment must appear on the same line as area(id:...) for co-occurrence learning."""
+    query = "area(id:3601758858)->.searchArea;\nnwr[\"amenity\"=\"cafe\"](area.searchArea);"
+    result = add_area_comment(query, 3601758858, "Shinjuku, Tokyo, Japan")
+    for line in result.splitlines():
+        if "area(id:3601758858)" in line:
+            assert "// Shinjuku, Tokyo, Japan" in line
+            break
+    else:
+        pytest.fail("area(id:...) line not found")
+
+
+def test_add_area_comment_no_match_leaves_query_unchanged():
+    """If area_id not in query, return unchanged."""
+    query = "area[\"name\"=\"Tokyo\"]->.inner;\nnwr[\"amenity\"=\"cafe\"](area.inner);"
+    result = add_area_comment(query, 3601758858, "Shinjuku, Tokyo, Japan")
+    assert result == query
+
+
+def test_add_area_comment_full_query():
+    query = (
+        "[out:json][timeout:30];\n"
+        "area(id:3601758858)->.searchArea;\n"
+        "(\n"
+        "  nwr[\"amenity\"=\"cafe\"](area.searchArea);\n"
+        ");\n"
+        "out geom;"
+    )
+    result = add_area_comment(query, 3601758858, "Shinjuku, Tokyo, Japan")
+    assert "area(id:3601758858)->.searchArea; // Shinjuku, Tokyo, Japan" in result
+
+
+def test_run_v2_output_contains_area_comment(tmp_path):
+    """Saved v2 OverpassQL must contain the area name comment."""
+    from generate_overpassql_v2 import run_v2
+
+    base = tmp_path / "data" / "concerns" / "amenity" / "cafe" / "Japan" / "Tokyo" / "Shinjuku"
+    base.mkdir(parents=True)
+    (base / "input-trident.txt").write_text("AreaWithConcern: Shinjuku, Tokyo, Japan; Cafes")
+
+    valid_query = (
+        "[out:json][timeout:30];\n"
+        "area(id:3601758858)->.searchArea;\n"
+        "(\n  nwr[\"amenity\"=\"cafe\"](area.searchArea);\n);\nout geom;"
+    )
+
+    with patch("generate_overpassql_v2.nominatim.get_osm_relation_id", return_value=1758858), \
+         patch("generate_overpassql_v2.build_prompt", return_value="PROMPT"), \
+         patch("generate_overpassql_v2.generate_overpassql", return_value=(valid_query, "")), \
+         patch("generate_overpassql_v2.taginfo.validate_tag", return_value=True), \
+         patch("generate_overpassql_v2.fetch_elements", return_value=[{"id": 1}] * 10):
+        run_v2(base_path=str(base), data_dir=str(tmp_path / "data"), model="qwen2.5-coder:3b")
+
+    output = list(base.glob("output-*-v2.overpassql"))[0].read_text()
+    assert "// Shinjuku, Tokyo, Japan" in output
 
 
 # ── validate_query_tags ───────────────────────────────────────────────────────
