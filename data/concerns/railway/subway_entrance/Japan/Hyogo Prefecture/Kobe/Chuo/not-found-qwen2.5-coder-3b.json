@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u795e\u6238\u5e02\"]->.outer;\narea[\"prefecture:ja\"=\"\u5175\u5eab\u770c\"]->.inner;\n(\n  nwr[\"railway\"~\"subway\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T03:24:03.791093+00:00"
+}

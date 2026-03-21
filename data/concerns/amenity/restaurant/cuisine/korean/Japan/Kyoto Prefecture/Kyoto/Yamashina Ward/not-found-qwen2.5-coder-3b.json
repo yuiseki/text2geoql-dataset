@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Yamashina Watari\"]->.outer;\narea[\"name:ja\"=\"\u5c71\u5f62\u5e02\u5927\u8056\u5802\"]->.inner;\n(\n  nwr[\"amenity\"~\"restaurant\"][\"cuisine\"~\"korean\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T04:44:03.134703+00:00"
+}

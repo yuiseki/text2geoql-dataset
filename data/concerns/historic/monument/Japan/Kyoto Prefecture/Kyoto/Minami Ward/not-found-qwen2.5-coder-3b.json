@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u4eac\u90fd\"]->.outer;\narea[\"prefecture:ja\"=\"\u4eac\u90fd\u5e02\u5e9c\"]->.inner;\n(\n  nwr[\"historic\"~\"monument\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T03:00:49.259007+00:00"
+}

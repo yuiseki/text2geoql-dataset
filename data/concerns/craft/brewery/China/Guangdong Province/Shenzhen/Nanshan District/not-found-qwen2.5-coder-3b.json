@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Nanshan District\"][\"admin_level\"=8][\"country:cn\"]=.outer;\n(\n  nwr[\"amenity\"~\"brewery\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T04:02:28.402148+00:00"
+}

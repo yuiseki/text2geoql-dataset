@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh_tw\"=\"\u6c99\u7530\u5340\"]->.outer;\narea[\"name:zh_tw\"=\"\u9999\u6e2f\u7279\u5225\u884c\u653f\u5340\"]->.inner;\n(\n  nwr[\"public_transport\"~\"tram\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T03:21:11.612727+00:00"
+}

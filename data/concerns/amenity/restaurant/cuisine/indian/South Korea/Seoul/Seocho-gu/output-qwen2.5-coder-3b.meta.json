@@ -1,0 +1,8 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "temperature": 0.01,
+  "num_predict": 256,
+  "generated_at": "2026-03-21T05:12:10.020702+00:00",
+  "element_count": 3
+}

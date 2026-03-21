@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u6a2a\u6d5c\u5e02\"][admin_level=2]->.outer;\narea[\"name:ja\"=\"\u6a2a\u6d5c\u5e02\u5927\u5cf6\u533a\"][admin_level=4]->.inner;\n(\n  nwr[\"building\"~\"stupa\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T03:38:19.028666+00:00"
+}

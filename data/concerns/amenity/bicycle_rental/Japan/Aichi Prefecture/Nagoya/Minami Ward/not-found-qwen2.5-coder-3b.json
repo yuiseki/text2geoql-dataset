@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u9577\u5d0e\u770c\"]->.outer;\narea[\"name:ja\"=\"\u5948\u826f\u770c\"]->.inner;\n(\n  nwr[\"amenity\"~\"bicycle_rental\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T06:25:25.729307+00:00"
+}

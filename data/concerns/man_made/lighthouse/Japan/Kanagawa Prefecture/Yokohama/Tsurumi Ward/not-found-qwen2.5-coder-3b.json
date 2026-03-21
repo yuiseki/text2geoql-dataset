@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u6771\u4eac\u5e02\"][admin_level=2]->.outer;\narea[\"name:ja\"=\"\u6a2a\u6d5c\u5e02\"][admin_level=2]->.inner;\n(\n  nwr[\"lighthouse\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T03:30:15.029280+00:00"
+}

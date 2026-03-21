@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Yuen Long District\"][\"country:zh\"=\"\u4e2d\u56fd\"]->.outer;\n(\n  nwr[\"historic\"~\"archaeological\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T02:52:14.666708+00:00"
+}

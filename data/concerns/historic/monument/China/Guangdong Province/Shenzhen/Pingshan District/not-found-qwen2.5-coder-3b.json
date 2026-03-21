@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Pingshan District\"][\"admin_level\"=8][\"country:cn\"]=.outer;\n(\n  nwr[\"historic\"~\"monument\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T03:03:12.617168+00:00"
+}

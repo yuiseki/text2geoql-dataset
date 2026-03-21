@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u6df1\u5733\"]->.outer;\narea[\"name:zh\"=\"\u5149\u660e\u533a\"]->.inner;\n(\n  nwr[\"amenity\"=\"restaurant\"][\"cuisine\"~\"italian\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T05:22:14.612406+00:00"
+}

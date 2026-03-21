@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Seoul\"]->.outer;\narea[\"name:en\"=\"Gangbuk-gu\"]->.inner;\n(\n  nwr[\"craft\"=\"pottery\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T03:46:05.098542+00:00"
+}

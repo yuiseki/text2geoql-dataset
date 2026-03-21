@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u5927\u5bae\u6c34\u9053\"]->.outer;\narea[\"prefecture:ja\"=\"\u57fc\u7389\u770c\"]->.inner;\n(\n  nwr[\"waterway\"~\"aqueduct\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T02:53:44.732076+00:00"
+}
