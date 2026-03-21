@@ -8,8 +8,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from populate_administrative import (
     build_countries_query,
+    build_subnodes_query,
     create_country_node,
+    create_subnode,
     fetch_countries,
+    fetch_subnodes,
     node_exists,
 )
 
@@ -106,3 +109,87 @@ def test_fetch_countries_deduplicates():
     with patch("populate_administrative.fetch_elements", return_value=mock_elements):
         result = fetch_countries()
     assert result.count("Japan") == 1
+
+
+# ── build_subnodes_query ──────────────────────────────────────────────────────
+
+
+def test_build_subnodes_query_contains_area_name():
+    q = build_subnodes_query("Hiroshima Prefecture, Japan", admin_level=7)
+    assert "Hiroshima Prefecture" in q
+
+
+def test_build_subnodes_query_contains_admin_level():
+    q = build_subnodes_query("Hiroshima Prefecture, Japan", admin_level=7)
+    assert '"7"' in q
+
+
+def test_build_subnodes_query_uses_area_filter():
+    q = build_subnodes_query("Hiroshima Prefecture, Japan", admin_level=7)
+    assert "area" in q.lower()
+    assert "out tags" in q
+
+
+# ── fetch_subnodes ────────────────────────────────────────────────────────────
+
+
+def test_fetch_subnodes_returns_name_en_list():
+    mock_elements = [
+        {"tags": {"name:en": "Hiroshima", "admin_level": "7"}},
+        {"tags": {"name:en": "Fukuyama", "admin_level": "7"}},
+        {"tags": {"name": "呉市"}},  # no name:en — skip
+    ]
+    with patch("populate_administrative.fetch_elements", return_value=mock_elements):
+        result = fetch_subnodes("Hiroshima Prefecture, Japan", admin_level=7)
+    assert "Hiroshima" in result
+    assert "Fukuyama" in result
+    assert len(result) == 2
+
+
+def test_fetch_subnodes_deduplicates():
+    mock_elements = [
+        {"tags": {"name:en": "Hiroshima"}},
+        {"tags": {"name:en": "Hiroshima"}},
+    ]
+    with patch("populate_administrative.fetch_elements", return_value=mock_elements):
+        result = fetch_subnodes("Hiroshima Prefecture, Japan", admin_level=7)
+    assert result.count("Hiroshima") == 1
+
+
+# ── create_subnode ────────────────────────────────────────────────────────────
+
+
+def test_create_subnode_creates_files(tmp_path):
+    parent = tmp_path / "Japan" / "Hiroshima Prefecture"
+    parent.mkdir(parents=True)
+    create_subnode(str(tmp_path), ["Japan", "Hiroshima Prefecture", "Hiroshima"], admin_level=7)
+    node = parent / "Hiroshima"
+    assert (node / "input-trident.txt").exists()
+    assert (node / "output-001.overpassql").exists()
+
+
+def test_create_subnode_trident_format(tmp_path):
+    parent = tmp_path / "Japan" / "Hiroshima Prefecture"
+    parent.mkdir(parents=True)
+    create_subnode(str(tmp_path), ["Japan", "Hiroshima Prefecture", "Hiroshima"], admin_level=7)
+    txt = (tmp_path / "Japan" / "Hiroshima Prefecture" / "Hiroshima" / "input-trident.txt").read_text().strip()
+    assert txt == "Area: Hiroshima, Hiroshima Prefecture, Japan"
+
+
+def test_create_subnode_overpassql_contains_admin_level(tmp_path):
+    parent = tmp_path / "Japan" / "Hiroshima Prefecture"
+    parent.mkdir(parents=True)
+    create_subnode(str(tmp_path), ["Japan", "Hiroshima Prefecture", "Naka Ward"], admin_level=8)
+    ql = (tmp_path / "Japan" / "Hiroshima Prefecture" / "Naka Ward" / "output-001.overpassql").read_text()
+    assert '"8"' in ql
+    assert "Naka Ward" in ql
+
+
+def test_create_subnode_is_idempotent(tmp_path):
+    parent = tmp_path / "Japan" / "Hiroshima Prefecture"
+    parent.mkdir(parents=True)
+    create_subnode(str(tmp_path), ["Japan", "Hiroshima Prefecture", "Hiroshima"], admin_level=7)
+    trident = tmp_path / "Japan" / "Hiroshima Prefecture" / "Hiroshima" / "input-trident.txt"
+    trident.write_text("modified")
+    create_subnode(str(tmp_path), ["Japan", "Hiroshima Prefecture", "Hiroshima"], admin_level=7)
+    assert trident.read_text() == "modified"
