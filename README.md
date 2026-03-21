@@ -53,10 +53,10 @@ The deep layer of TRIDENT — translating `AreaWithConcern: Shinjuku, Tokyo, Jap
 
 ## What has been achieved
 
-- **6,415 TRIDENT input instructions** paired with **2,300+ validated Overpass QL queries**
+- **18,000+ TRIDENT input instructions** paired with **3,000+ validated Overpass QL queries** (growing)
 - All queries verified against a self-hosted Overpass API — every saved query returns ≥ 1 real OSM element
-- **80 POI categories** across transport, food, shopping, healthcare, education, public facilities, parks, sport, tourism, historic sites, and places of worship
-- Multi-model benchmark across Qwen2.5-coder (0.5b–32b), Qwen3 (0.6b–14b), Qwen3.5 (0.8b–9b); best: **80% success rate** at ~4 s/query (`qwen3:8b --no-think`, `qwen2.5-coder:3b`)
+- **148 POI categories** across transport, accommodation, food & drink, shopping, health & medical, education, finance, public facilities, parks & nature, sport, tourism, historic & heritage, places of worship, craft & artisan, and natural features
+- Multi-model benchmark across 60+ model/config combinations; best: **gemma3:12b `--num-ctx 32768` → 100%**, `qwen3:8b --no-think` → 87%, `qwen2.5-coder:3b` → 80% at 4.9 s/query
 - Geographic coverage: Japan, South Korea, United States, Nepal, Taiwan, Kosovo, Lebanon, Kenya, Mexico, Ethiopia
 
 ---
@@ -108,10 +108,11 @@ data/concerns/{osm-key}/{osm-value}/{Country}/{City}/{District}/
 ## Roadmap
 
 ### Near-term
-- [ ] Integrate Nominatim into the generation pipeline: resolve area names to OSM relation IDs before prompting
-- [ ] Add composite concern entries for semantic groups (e.g., `Medical Facilities` = hospital + clinic + doctors union) with Few-Shot examples showing union queries
-- [ ] Integrate Taginfo tag validation as a pre-Overpass filter to catch invalid tags early
-- [ ] Run `generate_trident.py` to cross-product 80 concerns × existing seed areas and grow the dataset
+- [x] Integrate Nominatim into the generation pipeline (`generate_overpassql_v2.py`)
+- [x] Integrate Taginfo tag validation as a pre-Overpass filter to catch invalid tags early
+- [x] Expand POI categories from 80 to 148 via OSM approved tags survey
+- [ ] Run batch generation with v2 pipeline (Nominatim + Taginfo) across all entries
+- [ ] Add composite concern entries for semantic groups (e.g., `Medical Facilities` = hospital + clinic + doctors union)
 
 ### Medium-term
 - [ ] Auto-expand geographic coverage using Nominatim admin-area enumeration
@@ -127,6 +128,35 @@ data/concerns/{osm-key}/{osm-value}/{Country}/{City}/{District}/
 ## Architecture decisions
 
 Design rationale is documented in [`docs/ADR/`](docs/ADR/README.md).
+
+---
+
+## Research findings
+
+Experiment-driven insights broadly applicable to Few-Shot LLM prompting and geospatial query generation — [`docs/research_findings/`](docs/research_findings/README.md)
+
+| ID | Title | Status |
+|----|-------|--------|
+| [RF-001](docs/research_findings/RF-001-num-ctx-context-window-effect.md) | `num_ctx` (context window size) is a critical inference-time hyperparameter for Few-Shot quality | Confirmed |
+| [RF-002](docs/research_findings/RF-002-few-shot-k-model-size-dependency.md) | Optimal Few-Shot k depends on model size — larger k hurts small models | Confirmed |
+| [RF-003](docs/research_findings/RF-003-administrative-hierarchy-enables-nominatim-disambiguation.md) | Pre-encoded administrative hierarchy enables Nominatim to solve toponym disambiguation that LLMs fail at | Confirmed |
+
+---
+
+## Related work
+
+Surveys of prior work in Text-to-OverpassQL, NL-driven geodata retrieval, and OSM-specific NLP/LLM research — [`docs/research_surveys/`](docs/research_surveys/README.md)
+
+| ID | Summary |
+|----|---------|
+| [RS-001](docs/research_surveys/RS-001-text-to-overpassql.md) | Text-to-OverpassQL (Schifferle et al. TACL 2024) — closest prior work; T5 fine-tuned on crowdsourced NL–Overpass pairs |
+| [RS-002](docs/research_surveys/RS-002-nl-geodata-retrieval.md) | NL-driven geodata retrieval — ChatGeoPT, LLM-Find, Autonomous GIS, Geode |
+| [RS-003](docs/research_surveys/RS-003-geospatial-code-llms.md) | Geospatial code generation LLMs — GeoCode-GPT, Geo-FuB, Chain-of-Programming |
+| [RS-004](docs/research_surveys/RS-004-geospatial-qa-datasets.md) | Geospatial QA datasets — GeoQuestions1089, MapEval, WorldKG |
+| [RS-005](docs/research_surveys/RS-005-trident-origin.md) | TRIDENT — origin project and intermediate language design rationale |
+| [RS-006](docs/research_surveys/RS-006-osm-specific-nlp-llm.md) | OSM-specific NLP/LLM — OsmT (Dec 2024), SPOT v2 (ACL 2025), CHATMAP, WorldKG |
+
+**Novelty of this project** vs prior work: TRIDENT intermediate language · automated synthetic data generation with Overpass API validation · edge-device fine-tuning target (≤1.1B on Raspberry Pi 4B) · Nominatim-grounded area disambiguation.
 
 ## Development
 
