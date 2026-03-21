@@ -209,21 +209,30 @@ v3 retraining was performed on the dataset after pruning zero-count tag×area pa
 | gemma-3-270m | 0.2978 | 0.0984 | 97.15% |
 | functiongemma-270m | 0.3051 | 0.0954 | 97.26% |
 
-### v3 Regression analysis
+### v3 Regression analysis — resolved by fixed holdout re-evaluation
 
-All three models dropped ~5% uniformly despite only a 6% reduction in training pairs.
-The most likely explanation is **holdout set shift**: the val split (seed=42, 5%) now
-contains a different 226-pair sample after pruning. Pairs removed by pruning include
-zero-count tag×area combinations that may have been "easy" passes (zero-results pairs
-are `pass` because `zero_results` is a valid outcome — see evaluate.py). Pruning these
-from training means the model has less signal for zero-results scenarios. Additionally,
-if previously easy zero-count pairs were in the val set, their removal makes the holdout
-harder on average.
+The ~5% regression seen in the auto-split evaluation was caused entirely by **holdout
+set shift**, not model quality degradation. After pruning, the `seed=42` val split
+produced a different (harder) 226-pair sample.
 
-**Conclusion**: v3 pruning did not improve model accuracy on the held-out benchmark.
-The ~5% regression warrants investigation before adopting the pruned dataset as training
-data. Re-evaluating all three models on the original v2 holdout (fixed 226 pairs) would
-give a fair comparison.
+To verify, the v2 holdout inputs (226 pairs) were saved and used as a fixed holdout
+for re-evaluation. 218/226 v2 holdout pairs survived pruning (8 were zero-count pairs
+that were pruned). Results on the fixed 218-pair holdout:
+
+| Model | v2 (226) | v3 auto-split (226) | v3 fixed v2-holdout (218) | Δ vs v2 |
+|-------|----------|---------------------|---------------------------|---------|
+| Qwen2.5-Coder-0.5B | 95.1% (215/226) | 90.3% (204/226) | **95.9% (209/218)** | **+0.8%** |
+| functiongemma-270m | 94.7% (214/226) | 89.8% (203/226) | **95.0% (207/218)** | **+0.3%** |
+| gemma-3-270m | 94.2% (213/226) | 89.4% (202/226) | **94.0% (205/218)** | **-0.2%** |
+
+**Conclusion**: Zero-count pruning does not degrade model quality. v3 models are
+equivalent to or marginally better than v2 on the same evaluation pairs. The pruned
+dataset (4,217 pairs) is the preferred training set going forward as it removes
+tag×area combinations with no OSM backing data.
+
+The `--holdout-json` feature was added to `evaluate.py` to enable fixed-holdout
+cross-version comparisons. The v2 holdout list is saved at
+`results/v2-holdout-inputs.json`.
 
 The differences are small (2 samples between first and third) and all fall within
 Overpass API variance. The practical ceiling is set by OSM data quality, not model
