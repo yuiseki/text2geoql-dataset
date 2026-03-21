@@ -62,8 +62,10 @@ The open question was: can a sub-1B model serve the Deep Layer if fine-tuned on 
 | **After LoRA FT (v2)** | **functiongemma-270m-it** | **270M** | **church-fixed** | **none** | **93.3% (28/30)** |
 | **After LoRA FT (v2)** | **functiongemma-270m-it** | **270M** | **church-fixed** | **none** | **94.7% (214/226) full holdout** |
 
-\* v1 gemma-3-270m 96.7% reflects transient Overpass API variance on the Islands District→Embassies
-borderline case (no embassies exist there; the query occasionally returns results from broader HK area).
+\* v1 gemma-3-270m 96.7% reflects an OSM database state difference between the v1 and v2
+evaluation sessions. Overpass API is deterministic for a given query and DB state; the
+discrepancy is explained by OSM data being updated between sessions, affecting borderline
+POI-existence cases like Islands District→Embassies.
 
 ### Training Metrics — Qwen2.5-Coder-0.5B (3 epochs)
 
@@ -198,10 +200,11 @@ suggesting that function-calling specialization (structured output priors) provi
 a marginal advantage for OverpassQL generation — the opposite of the initial hypothesis
 in RD-002 that it might hurt. The margin is too small to be conclusive.
 
-The v1 gemma-3-270m result of 96.7% was due to transient Overpass API variance: the
-Islands District query occasionally returns results from the broader Hong Kong area,
-not specifically the Islands District. This illustrates that evaluation against a live
-API introduces variance on borderline POI-existence cases.
+The v1 gemma-3-270m result of 96.7% is explained by OSM database state differences between
+evaluation sessions. Overpass API is deterministic given a fixed query and DB state; the
+1-sample discrepancy reflects OSM data updates between the v1 and v2 evaluation runs on
+a borderline POI-existence case (Islands District→Embassies). This is an evaluation
+methodology note, not a model behavior difference.
 
 ### 3. Current dataset scale is sufficient
 
