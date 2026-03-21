@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u9f99\u534e\u533a\"]->.outer;\narea[\"name:en\"=\"Longhua District\"]->.inner;\n(\n  nwr[\"aeroway\"=\"airport\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-20T16:16:44.003369+00:00"
-}

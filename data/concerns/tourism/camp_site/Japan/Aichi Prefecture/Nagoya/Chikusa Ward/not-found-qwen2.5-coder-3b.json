@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Nagoya\"][boundary=administrative]->.outer;\narea[\"name:en\"=\"Chikusa Ward\"]->.inner;\n(\n  nwr[\"tourism\"=\"camp_site\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-20T22:16:38.601523+00:00"
-}

@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u6e0b\u8c37\u533a\"]->.outer;\narea[\"name:en\"=\"Higashikurume\"]->.inner;\n(\n  nwr[\"amenity\"=\"bar\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-20T16:09:09.971481+00:00"
-}

@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Osaka\"]->.outer;\narea[\"name:en\"=\"Nishinari Ward\"]\n(\n  nwr[\"amenity\"=\"optician\"](area.searchArea);\n);\nout geom;",
-  "generated_at": "2026-03-20T23:22:27.687519+00:00"
-}

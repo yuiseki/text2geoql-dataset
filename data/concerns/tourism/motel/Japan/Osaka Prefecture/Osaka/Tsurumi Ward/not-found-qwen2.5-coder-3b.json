@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Osaka\"][boundary=administrative]->.outer;\narea[\"name:en\"=\"Osaka Prefecture\"]->.inner;\n(\n  nwr[\"accommodation\"=\"motel\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-20T22:31:01.595250+00:00"
-}
