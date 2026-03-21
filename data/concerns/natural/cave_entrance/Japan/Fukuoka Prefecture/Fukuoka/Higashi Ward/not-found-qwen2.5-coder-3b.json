@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Fukuoka\"]->.outer;\narea[\"name:en\"=\"Higashi Ward\"]\n(\n  nwr[\"natural\"=\"cave\"](area.searchArea);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:04:19.142839+00:00"
+}

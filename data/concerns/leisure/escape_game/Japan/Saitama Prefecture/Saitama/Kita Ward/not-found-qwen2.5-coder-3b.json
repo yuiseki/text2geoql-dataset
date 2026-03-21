@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Saitama\"]->.outer;\narea[\"name:ja\"~\"\u3055\u3044\u305f\u307e\u770c\"]->.inner;\n(\n  nwr[\"leisure\"~\"escape_room\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:42:00.036337+00:00"
+}

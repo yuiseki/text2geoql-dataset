@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Yamashina Wat\"][boundary=administrative]->.outer;\narea[\"name:ja\"=\"\u5c71\u306e\u6c34\"][boundary=administrative]->.inner;\n(\n  nwr[\"amenity\"~\"stadium\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T01:29:30.258977+00:00"
+}

@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Aichi Prefecture\"]->.outer;\narea[\"name:en\"=\"Nagoya\"]->.inner;\n(\n  nwr[\"leisure\"=\"trampoline_park\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:16:42.503881+00:00"
+}

@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Kanagawa Prefecture\"]->.outer;\narea[\"name:en\"=\"Yokohama\"]\n(\n  nwr[\"leisure\"=\"swimming_pool\"](area.searchArea);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:08:31.161140+00:00"
+}

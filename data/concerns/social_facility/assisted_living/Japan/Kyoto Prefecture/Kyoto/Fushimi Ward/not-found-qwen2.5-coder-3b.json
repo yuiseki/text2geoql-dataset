@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Kyoto\"]->.outer;\narea[\"name:en\"=\"Fushimi Ward\"]\n(\n  nwr[\"amenity\"=\"assisted_living\"](area.searchArea);\n);\nout geom;",
+  "generated_at": "2026-03-20T23:55:44.694640+00:00"
+}

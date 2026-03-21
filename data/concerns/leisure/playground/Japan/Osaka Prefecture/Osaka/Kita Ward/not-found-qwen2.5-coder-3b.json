@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u5927\u962a\u5e9c\"]->.outer;\narea[\"name:ja\"=\"\u5927\u962a\u5e02\"]->.inner;\n(\n  nwr[\"leisure\"~\"playground\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T01:08:44.415587+00:00"
+}

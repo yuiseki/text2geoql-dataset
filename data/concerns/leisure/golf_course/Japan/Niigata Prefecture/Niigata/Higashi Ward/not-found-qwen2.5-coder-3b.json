@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"Niigata Prefecture\"]->.outer;\narea[\"name:ja\"=\"Niigata\"]->.inner;\n(\n  nwr[\"tourism\"=\"golf\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:21:28.875938+00:00"
+}

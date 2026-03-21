@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Minami Ward\"]->.outer;\narea[\"name:en\"=\"Kanagawa Prefecture\"]->.inner;\n(\n  nwr[\"leisure\"~\"escape_room\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:43:36.829371+00:00"
+}

@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Tuen Mun District\"]->.outer;\narea[\"name:zh-hk\"=\"\u5c6f\u9580\u5340\"]->.inner;\n(\n  nwr[\"amenity\"~\"hospital|clinic\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T01:56:23.383300+00:00"
+}

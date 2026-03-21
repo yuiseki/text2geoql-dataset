@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"Atsuta Ward\"]->.outer;\narea[\"name:ja\"=\"Nagoya\"]->.inner;\n(\n  nwr[\"leisure\"~\"nature_reserve\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:46:56.076091+00:00"
+}

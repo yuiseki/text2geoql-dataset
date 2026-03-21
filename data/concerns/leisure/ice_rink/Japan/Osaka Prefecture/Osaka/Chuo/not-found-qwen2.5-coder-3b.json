@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Osaka Prefecture\"]->.outer;\narea[\"name:ja\"=\"\u5927\u962a\u5e9c\"]->.inner;\n(\n  nwr[\"amenity\"=\"ice_rink\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T01:36:00.284675+00:00"
+}

@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Longgang District\"][\"admin_level\"=8][\"country:cn\"]=.outer;\n(\n  nwr[\"military\"~\"battlefield\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T02:29:44.039187+00:00"
+}

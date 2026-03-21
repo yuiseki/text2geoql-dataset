@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Kwun Tong District\"][\"admin_level\"=8][\"country:en\"=\"Hong Kong\"];\n(\n  nwr[\"amenity\"~\"pharmacy\"](area);\n);\nout geom;",
+  "generated_at": "2026-03-21T02:03:12.099664+00:00"
+}

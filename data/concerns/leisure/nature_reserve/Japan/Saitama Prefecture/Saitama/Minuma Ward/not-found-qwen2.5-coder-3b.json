@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Minuma Wat\"](area)[boundary=administrative];\n(\n  nwr[\"leisure\"~\"nature_reserve\"](area);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:46:22.841345+00:00"
+}

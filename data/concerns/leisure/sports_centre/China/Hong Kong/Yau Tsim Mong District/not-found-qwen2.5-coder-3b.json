@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Yau Tsim Mong District\"]->.outer;\narea[\"name:zh\"=\"\u6cb9\u5c16\u65fa\u533a\"]->.inner;\n(\n  nwr[\"amenity\"~\"sports_center\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T01:16:04.181114+00:00"
+}

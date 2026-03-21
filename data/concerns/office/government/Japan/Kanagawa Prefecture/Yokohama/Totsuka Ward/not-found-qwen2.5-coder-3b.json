@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u6771\u90fd\u5e9c\u5e81\"]->.outer;\n(\n  nwr[\"office\"~\"government\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T02:08:06.630940+00:00"
+}

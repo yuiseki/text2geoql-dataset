@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u9ad8\u77e5\u5e02\u897f\u5c71\u516c\u5712\"]->.outer;\n(\n  nwr[\"leisure\"~\"garden\"](area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:34:24.143579+00:00"
+}

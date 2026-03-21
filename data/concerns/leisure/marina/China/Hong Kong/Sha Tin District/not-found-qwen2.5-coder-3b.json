@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Hong Kong\"]->.outer;\narea[\"name:zh-hk\"=\"\u6df1\u6c34\u57d7\u533a\"]\n(\n  nwr[\"marina\"](area.searchArea);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:15:22.730152+00:00"
+}

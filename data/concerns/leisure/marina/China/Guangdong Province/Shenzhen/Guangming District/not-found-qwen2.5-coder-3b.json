@@ -1,0 +1,7 @@
+{
+  "model": "qwen2.5-coder:3b",
+  "model_slug": "qwen2.5-coder-3b",
+  "reason": "zero_results",
+  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Guangdong Province\"]->.outer;\narea[\"name:en\"=\"Shenzhen\"]->.inner;\n(\n  nwr[\"waterway\"=\"marina\"](area.inner)(area.outer);\n);\nout geom;",
+  "generated_at": "2026-03-21T00:14:49.690423+00:00"
+}
