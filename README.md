@@ -58,6 +58,7 @@ The deep layer of TRIDENT — translating `AreaWithConcern: Shinjuku, Tokyo, Jap
 - **148 POI categories** across transport, accommodation, food & drink, shopping, health & medical, education, finance, public facilities, parks & nature, sport, tourism, historic & heritage, places of worship, craft & artisan, and natural features
 - Multi-model benchmark across 60+ model/config combinations; best: **gemma3:12b `--num-ctx 32768` → 100%**, `qwen3:8b --no-think` → 87%, `qwen2.5-coder:3b` → 80% at 4.9 s/query
 - Geographic coverage: Japan, South Korea, United States, Nepal, Taiwan, Kosovo, Lebanon, Kenya, Mexico, Ethiopia
+- **LoRA fine-tuning PoC**: `Qwen2.5-Coder-0.5B-Instruct` + LoRA on 4278 pairs → **95.1% accuracy** on full 226-pair holdout with **no Few-Shot prompting** (vs. 47% Few-Shot baseline with 3B) → see [RF-004](docs/research_findings/RF-004-lora-ft-eliminates-few-shot-need.md) and [`examples/lora_finetune/`](examples/lora_finetune/)
 
 ---
 
@@ -117,7 +118,7 @@ data/concerns/{osm-key}/{osm-value}/{Country}/{City}/{District}/
 ### Medium-term
 - [ ] Auto-expand geographic coverage using Nominatim admin-area enumeration
 - [ ] Auto-refresh `good_concerns.yaml` from Taginfo usage-frequency data
-- [ ] Begin fine-tuning experiments on a ≤ 1.1B model (Unsloth)
+- [x] LoRA fine-tuning PoC on 0.5B model — 95.1% accuracy, Few-Shot no longer needed (→ [`examples/lora_finetune/`](examples/lora_finetune/))
 
 ### Long-term
 - [ ] Ship a fine-tuned model that runs on Raspberry Pi 4B (8 GB RAM), enabling TRIDENT deep layer fully offline
@@ -140,6 +141,7 @@ Experiment-driven insights broadly applicable to Few-Shot LLM prompting and geos
 | [RF-001](docs/research_findings/RF-001-num-ctx-context-window-effect.md) | `num_ctx` (context window size) is a critical inference-time hyperparameter for Few-Shot quality | Confirmed |
 | [RF-002](docs/research_findings/RF-002-few-shot-k-model-size-dependency.md) | Optimal Few-Shot k depends on model size — larger k hurts small models | Confirmed |
 | [RF-003](docs/research_findings/RF-003-administrative-hierarchy-enables-nominatim-disambiguation.md) | Pre-encoded administrative hierarchy enables Nominatim to solve toponym disambiguation that LLMs fail at | Confirmed |
+| [RF-004](docs/research_findings/RF-004-lora-ft-eliminates-few-shot-need.md) | LoRA fine-tuning of 0.5B model eliminates Few-Shot need — 95.1% accuracy on holdout with no prompt engineering | Confirmed |
 
 ---
 
