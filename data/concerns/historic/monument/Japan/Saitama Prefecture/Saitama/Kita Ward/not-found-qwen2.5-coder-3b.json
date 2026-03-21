@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u795e\u5948\u5ddd\u770c\"]->.outer;\narea[\"name:ja\"=\"\u3055\u3044\u305f\u307e\u5e02\"]->.inner;\n(\n  nwr[\"historic\"~\"monument\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-21T02:58:20.454582+00:00"
-}

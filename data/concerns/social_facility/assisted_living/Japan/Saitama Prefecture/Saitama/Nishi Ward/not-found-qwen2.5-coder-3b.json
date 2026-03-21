@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"Saitama\"]->.outer;\narea[\"name:ja\"=\"Nishi Ward\"]\n(\n  nwr[\"amenity\"=\"assisted_living\"](area.searchArea);\n);\nout geom;",
-  "generated_at": "2026-03-20T23:54:59.382283+00:00"
-}

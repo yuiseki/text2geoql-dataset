@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\ud788\ub77c\ub178\u533a\"]->.outer;\narea[\"name:en\"=\"Hirano Ward\"]->.inner;\n(\n  nwr[\"tourism\"=\"theme_park\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-20T14:14:59.505809+00:00"
-}

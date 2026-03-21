@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Central and Western District\"]->.outer;\narea[\"name:zh\"=\"\u4e2d\u897f\u5340\"]->.inner;\n(\n  nwr[\"sport\"~\"golf\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-21T00:25:11.347458+00:00"
-}

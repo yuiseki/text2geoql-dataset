@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u540d\u53e4\u5c4b\u5e02\"]->.outer;\narea[\"name:en\"=\"Nagoya\"]->.inner;\n(\n  nwr[\"building\"=\"castle\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-20T14:43:21.887737+00:00"
-}

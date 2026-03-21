@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Yokohama\"]->.outer;\narea[\"prefecture:ja\"~\"\u795e\u5948\u5ddd\u770c\"]->.inner;\n(\n  nwr[\"leisure\"~\"bowling alley\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-21T00:52:50.248551+00:00"
-}

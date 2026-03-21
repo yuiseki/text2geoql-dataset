@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:zh-hk\"=\"\u5c6f\u9580\u5340\"]->.outer;\narea[\"name:en\"=\"Tsuen Wan District\"]->.inner;\n(\n  nwr[\"tourism\"=\"aquarium\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-20T14:19:19.930564+00:00"
-}

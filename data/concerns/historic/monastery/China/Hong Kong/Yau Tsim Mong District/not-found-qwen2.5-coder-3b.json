@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:zh\"=\"\u4e2d\u83ef\u4eba\u6c11\u5171\u548c\u570b\"][\"name:en\"=\"Hong Kong\"]->.outer;\narea[\"name:zh\"=\"\u9999\u6e2f\u7279\u522b\u884c\u653f\u533a\"][\"name:en\"=\"Hong Kong\"]->.inner;\n(\n  nwr[\"building\"~\"monastery\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-21T02:46:44.821380+00:00"
-}

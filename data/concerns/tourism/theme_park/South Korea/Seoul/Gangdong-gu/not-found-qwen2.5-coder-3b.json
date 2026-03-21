@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:ko\"=\"\uac15\uc6d0\ub3c4\"]->.outer;\narea[\"name:ko\"=\"\uc11c\uc6b8\ud2b9\ubcc4\uc2dc\"]->.inner;\n(\n  nwr[\"tourism\"=\"theme_park\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-20T14:13:20.154399+00:00"
-}

@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u5948\u826f\u770c\"][\"prefecture:ja\"=\"\u611b\u77e5\u770c\"]->.outer;\narea[\"name:ja\"=\"\u5948\u826f\u770c\"][\"prefecture:ja\"=\"\u611b\u77e5\u770c\"][\"ward:ja\"=\"\u548c\u6b4c\u5c71\u5e02\"]->.inner;\n(\n  nwr[\"amenity\"~\"shrine\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-21T02:17:02.094437+00:00"
-}

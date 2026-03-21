@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:ja\"=\"\u5b87\u90fd\u5bae\u30ef\u30a4\u30eb\u30c9\"][boundary=administrative]->.outer;\narea[\"name:ja\"=\"\u5b87\u90fd\u5bae\u5e02\"]->.inner;\n(\n  nwr[\"tourism\"=\"attraction\"](area.inner)(area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-20T21:49:22.602950+00:00"
-}

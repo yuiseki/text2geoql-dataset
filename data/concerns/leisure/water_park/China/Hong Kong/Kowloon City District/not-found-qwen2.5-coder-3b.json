@@ -1,7 +1,0 @@
-{
-  "model": "qwen2.5-coder:3b",
-  "model_slug": "qwen2.5-coder-3b",
-  "reason": "zero_results",
-  "query": "[out:json][timeout:30];\narea[\"name:en\"=\"Kowloon City District\"]->.outer;\n(\n  nwr[\"leisure\"~\"water_park\"](area.outer);\n);\nout geom;",
-  "generated_at": "2026-03-21T01:03:51.992685+00:00"
-}
