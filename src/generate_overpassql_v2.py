@@ -74,14 +74,37 @@ def extract_tags_from_query(query: str) -> list[tuple[str, str]]:
 def build_area_hint(area_id: int, area_name: str) -> str:
     """Build the Important note string to inject into the prompt.
 
+    Includes a concrete Overpass QL snippet so the LLM learns the exact
+    area(id:...) syntax (not area[id:...] which is invalid).
+
     >>> hint = build_area_hint(3601234567, "Shinjuku, Tokyo, Japan")
     >>> "3601234567" in hint and "Shinjuku, Tokyo, Japan" in hint
+    True
+    >>> "area(id:3601234567)" in hint
+    True
+    >>> ".searchArea" in hint
     True
     """
     return (
         f'Important note: For the area "{area_name}", '
-        f"use area(id:{area_id}) as the area filter in the query."
+        f"use the following exact Overpass QL syntax for the area filter: "
+        f"area(id:{area_id})->.searchArea; "
+        f"Then use (area.searchArea) instead of name-based area filters."
     )
+
+
+def fix_area_id_syntax(query: str) -> str:
+    """Correct the common LLM mistake of area[id:X] → area(id:X).
+
+    The LLM sometimes generates area[id:...] (tag-filter syntax) instead of
+    area(id:...) (element-selector syntax). This post-processor fixes it.
+
+    >>> fix_area_id_syntax('area[id:3601234567]->.inner;')
+    'area(id:3601234567)->.inner;'
+    >>> fix_area_id_syntax('area(id:3601234567)->.inner;')
+    'area(id:3601234567)->.inner;'
+    """
+    return re.sub(r'area\[id:(\d+)\]', r'area(id:\1)', query)
 
 
 # ── Taginfo validation ────────────────────────────────────────────────────────
@@ -207,6 +230,9 @@ def run_v2(
         FailureMeta.create(model=model, reason=failure_reason, query=None).save(not_found_path)  # type: ignore[arg-type]
         return
 
+    # Post-process: fix area[id:X] → area(id:X) if LLM used wrong syntax
+    overpassql = fix_area_id_syntax(overpassql)
+
     print("Generated OverpassQL:\n===")
     print(overpassql)
     print("===")
@@ -242,14 +268,19 @@ def run_v2(
     print("number of elements:", n)
 
     if n > 0:
+        # Save with v2 slug directly — save_overpassql uses meta.model_slug (no -v2 suffix)
+        os.makedirs(base_path, exist_ok=True)
+        with open(save_path, "w") as f:
+            f.write(overpassql + "\n")
         meta = GenerationMeta.create(
             model=model,
             temperature=temperature,
             num_predict=num_predict,
             element_count=n,
         )
-        saved = save_overpassql(overpassql, base_path, meta, tmp_root)
-        print(saved)
+        meta_path = os.path.join(base_path, f"output-{slug}.meta.json")
+        meta.save(meta_path)
+        print(save_path)
     else:
         FailureMeta.create(model=model, reason="zero_results", query=overpassql).save(not_found_path)
         print(not_found_path)

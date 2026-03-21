@@ -87,6 +87,44 @@ def test_build_area_hint_is_string():
     assert len(hint) > 0
 
 
+def test_build_area_hint_uses_correct_overpassql_syntax():
+    """Hint must use area(id:...) not area[id:...] — the LLM must learn the right syntax."""
+    hint = build_area_hint(3_601_234_567, "Shinjuku, Tokyo, Japan")
+    assert "area(id:3601234567)" in hint
+    assert "area[id:" not in hint
+
+
+def test_build_area_hint_includes_syntax_snippet():
+    """Hint should include a concrete Overpass QL snippet to guide the LLM."""
+    hint = build_area_hint(3_601_234_567, "Shinjuku, Tokyo, Japan")
+    # Must include the .searchArea variable assignment pattern
+    assert ".searchArea" in hint
+
+
+# ── fix_area_id_syntax ────────────────────────────────────────────────────────
+
+
+from generate_overpassql_v2 import fix_area_id_syntax
+
+
+def test_fix_area_id_syntax_corrects_bracket_form():
+    """area[id:X] → area(id:X)"""
+    query = "area[id:3601234567]->.searchArea;\nnwr[\"amenity\"=\"cafe\"](area.searchArea);"
+    fixed = fix_area_id_syntax(query)
+    assert "area(id:3601234567)" in fixed
+    assert "area[id:" not in fixed
+
+
+def test_fix_area_id_syntax_leaves_correct_form_unchanged():
+    query = "area(id:3601234567)->.searchArea;\nnwr[\"amenity\"=\"cafe\"](area.searchArea);"
+    assert fix_area_id_syntax(query) == query
+
+
+def test_fix_area_id_syntax_no_area_id():
+    query = "area[\"name\"=\"Tokyo\"]->.inner;\nnwr[\"amenity\"=\"cafe\"](area.inner);"
+    assert fix_area_id_syntax(query) == query
+
+
 # ── validate_query_tags ───────────────────────────────────────────────────────
 
 VALID_QUERY = 'nwr["amenity"="cafe"](area.inner);'
@@ -200,6 +238,29 @@ def test_run_v2_success(tmp_path):
 
     outputs = list(base.glob("output-*.overpassql"))
     assert len(outputs) == 1
+
+
+def test_run_v2_output_uses_v2_slug(tmp_path):
+    """Output file must use -v2 suffix, not collide with v1 output."""
+    from generate_overpassql_v2 import run_v2
+
+    base = tmp_path / "data" / "concerns" / "amenity" / "cafe" / "Japan" / "Tokyo" / "Taito"
+    base.mkdir(parents=True)
+    (base / "input-trident.txt").write_text("AreaWithConcern: Taito, Tokyo, Japan; Cafes")
+
+    valid_query = '[out:json][timeout:30];\narea(id:3601234567)->.searchArea;\n(\n  nwr["amenity"="cafe"](area.searchArea);\n);\nout geom;'
+
+    with patch("generate_overpassql_v2.nominatim.get_osm_relation_id", return_value=1234567), \
+         patch("generate_overpassql_v2.build_prompt", return_value="PROMPT"), \
+         patch("generate_overpassql_v2.generate_overpassql", return_value=(valid_query, "")), \
+         patch("generate_overpassql_v2.taginfo.validate_tag", return_value=True), \
+         patch("generate_overpassql_v2.fetch_elements", return_value=[{"id": 1}] * 5):
+        run_v2(base_path=str(base), data_dir=str(tmp_path / "data"), model="qwen2.5-coder:3b")
+
+    v2_outputs = list(base.glob("output-*-v2.overpassql"))
+    v1_outputs = list(base.glob("output-qwen2.5-coder-3b.overpassql"))
+    assert len(v2_outputs) == 1, "v2 output must exist"
+    assert len(v1_outputs) == 0, "v1 output must NOT be created by run_v2"
 
 
 def test_run_v2_invalid_tag_skips_overpass(tmp_path):
