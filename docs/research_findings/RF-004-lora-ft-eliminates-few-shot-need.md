@@ -39,19 +39,28 @@ The open question was: can a sub-1B model serve the Deep Layer if fine-tuned on 
 |-------|-----------|--------------|-------|
 | `Qwen/Qwen2.5-Coder-0.5B-Instruct` | 494M | Qwen2.5 | fp16 |
 | `google/gemma-3-270m-it` | 270M | Gemma 3 | bfloat16 |
+| `google/functiongemma-270m-it` | 270M | Gemma 3 (function-calling specialized) | bfloat16 |
 
 ## Results
 
 ### Main Comparison Table
 
-| Condition | Model | Params | Few-Shot | Score |
-|-----------|-------|--------|----------|-------|
-| Base (before FT) | qwen2.5-coder:0.5b (Ollama) | 494M | k=5 | 47% (7/15) |
-| Base (before FT) | Qwen2.5-Coder-0.5B-Instruct (HF) | 494M | none | 0.0% (0/30) |
-| Base (before FT) | gemma-3-270m-it (HF) | 270M | none | 0.0% (0/30) |
-| **After LoRA FT** | **Qwen2.5-Coder-0.5B-Instruct (HF)** | **494M** | **none** | **93.3% (28/30)** |
-| **After LoRA FT** | **Qwen2.5-Coder-0.5B-Instruct (HF)** | **494M** | **none** | **95.1% (215/226) full holdout** |
-| **After LoRA FT** | **gemma-3-270m-it (HF)** | **270M** | **none** | **96.7% (29/30)** |
+| Condition | Model | Params | Dataset | Few-Shot | Score |
+|-----------|-------|--------|---------|----------|-------|
+| Base (before FT) | qwen2.5-coder:0.5b (Ollama) | 494M | — | k=5 | 47% (7/15) |
+| Base (before FT) | Qwen2.5-Coder-0.5B-Instruct (HF) | 494M | — | none | 0.0% (0/30) |
+| Base (before FT) | gemma-3-270m-it (HF) | 270M | — | none | 0.0% (0/30) |
+| Base (before FT) | functiongemma-270m-it (HF) | 270M | — | none | 0.0% (0/30) |
+| After LoRA FT (v1) | Qwen2.5-Coder-0.5B-Instruct | 494M | original | none | 93.3% (28/30) |
+| After LoRA FT (v1) | Qwen2.5-Coder-0.5B-Instruct | 494M | original | none | 95.1% (215/226) full holdout |
+| After LoRA FT (v1) | gemma-3-270m-it | 270M | original | none | 96.7% (29/30)* |
+| After LoRA FT (v1) | functiongemma-270m-it | 270M | original | none | 93.3% (28/30) |
+| **After LoRA FT (v2)** | **Qwen2.5-Coder-0.5B-Instruct** | **494M** | **church-fixed** | **none** | **93.3% (28/30)** |
+| **After LoRA FT (v2)** | **gemma-3-270m-it** | **270M** | **church-fixed** | **none** | **93.3% (28/30)** |
+| **After LoRA FT (v2)** | **functiongemma-270m-it** | **270M** | **church-fixed** | **none** | **93.3% (28/30)** |
+
+\* v1 gemma-3-270m 96.7% reflects transient Overpass API variance on the Islands District→Embassies
+borderline case (no embassies exist there; the query occasionally returns results from broader HK area).
 
 ### Training Metrics — Qwen2.5-Coder-0.5B (3 epochs)
 
@@ -93,11 +102,24 @@ Both models internalized OSM tag knowledge (e.g. `amenity=convenience_store`,
 `tourism=hotel`, multi-area `area["name:en"=...]` filter patterns) directly into weights.
 The system prompt is a single sentence with no examples.
 
-### 2. 270M model matches or exceeds 494M model on this task
+### 2. All three sub-500M models converge to the same ceiling
 
-`gemma-3-270m-it` achieves 96.7% (29/30) vs Qwen's 93.3% (28/30) on the same 30 samples.
-This is remarkable: a 270M model outperforming a 494M model, suggesting this task is narrow
-enough that architecture and training data quality matter more than raw parameter count.
+After retraining on the corrected dataset (v2), all three models — Qwen2.5-Coder-0.5B
+(494M), gemma-3-270m-it (270M), and functiongemma-270m-it (270M) — achieve exactly
+**93.3% (28/30)** with identical failure cases:
+
+1. `Islands District, Hong Kong → Embassies` — no diplomatic offices in this rural island
+   district (genuine POI absence)
+2. `Suminoe Ward, Osaka → Churches` — no churches tagged in OSM for this ward (genuine
+   data absence, even with the correct union query)
+
+Both remaining failures are irreducible given current OSM data. The practical ceiling
+for this holdout set is **93.3%**, and all three models have reached it.
+
+The v1 gemma-3-270m result of 96.7% was due to transient Overpass API variance: the
+Islands District query occasionally returns results from the broader Hong Kong area,
+not specifically the Islands District. This illustrates that evaluation against a live
+API introduces variance on borderline POI-existence cases.
 
 ### 3. Current dataset scale is sufficient
 
