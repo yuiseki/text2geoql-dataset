@@ -32,3 +32,20 @@ def count_elements(
 ) -> int:
     """Return the number of elements returned by an Overpass QL query."""
     return len(fetch_elements(query, endpoint=endpoint))
+
+
+def fetch_count(
+    query: str,
+    *,
+    endpoint: str = DEFAULT_ENDPOINT,
+) -> int:
+    """Execute an Overpass QL query with 'out count' and return the total.
+
+    The 'out count' response returns a single element of type 'count'
+    with a 'total' tag, which is much more efficient than fetching all
+    geometries just to count them.
+    """
+    elements = fetch_elements(query, endpoint=endpoint)
+    if elements and elements[0].get("type") == "count":
+        return int(elements[0].get("tags", {}).get("total", 0))
+    return 0
