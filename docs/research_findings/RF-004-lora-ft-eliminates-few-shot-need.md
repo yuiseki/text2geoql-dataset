@@ -57,6 +57,7 @@ The open question was: can a sub-1B model serve the Deep Layer if fine-tuned on 
 | After LoRA FT (v1) | functiongemma-270m-it | 270M | original | none | 93.3% (28/30) |
 | **After LoRA FT (v2)** | **Qwen2.5-Coder-0.5B-Instruct** | **494M** | **church-fixed** | **none** | **93.3% (28/30)** |
 | **After LoRA FT (v2)** | **gemma-3-270m-it** | **270M** | **church-fixed** | **none** | **93.3% (28/30)** |
+| **After LoRA FT (v2)** | **gemma-3-270m-it** | **270M** | **church-fixed** | **none** | **94.2% (213/226) full holdout** |
 | **After LoRA FT (v2)** | **functiongemma-270m-it** | **270M** | **church-fixed** | **none** | **93.3% (28/30)** |
 
 \* v1 gemma-3-270m 96.7% reflects transient Overpass API variance on the Islands District→Embassies
@@ -89,7 +90,18 @@ borderline case (no embassies exist there; the query occasionally returns result
 | `name:en` resolution failure | ~3 | Ome, Omiya Ward lacking `name:en` in OSM |
 | Genuine POI scarcity | 2 | Ramen in Niigata Nishi, Indian restaurants in Fukuoka Chuo |
 
-**gemma-3-270m-it (1/30 failures):**
+**gemma-3-270m-it v2 full holdout (13/226 failures, all `zero_results`):**
+
+| Category | Count | Examples |
+|----------|-------|---------|
+| Real POI absence | 4 | Islands District→Embassies, Higashi Nagoya→Alpine Huts, Nishi Yokohama→Camp Sites, Sawara Fukuoka→Blacksmiths |
+| `name:en` resolution failure | 3 | Ome→Convenience stores, Omiya Ward→Sushi, Omiya Ward→Museums |
+| Genuine POI scarcity | 4 | Ramen in Niigata Nishi, Indian restaurants in Fukuoka Chuo, Soba in Kobe Chuo, Museums in Fukuoka Chuo |
+| OSM data absence | 2 | Churches in Suminoe Ward, Guest Houses in Nanshan Shenzhen |
+
+All failure categories are irreducible given current OSM data or infrastructure (no `name:en` fallback at model layer per RD-004).
+
+**gemma-3-270m-it v1 (1/30 failures):**
 
 - `Suminoe Ward, Osaka → Churches` — uses `building=church` → zero_results (same as Qwen)
   - This is a tag quality issue in training data, not a model capability gap
