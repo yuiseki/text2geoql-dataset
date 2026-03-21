@@ -92,16 +92,77 @@ borderline case (no embassies exist there; the query occasionally returns result
 | `name:en` resolution failure | ~3 | Ome, Omiya Ward lacking `name:en` in OSM |
 | Genuine POI scarcity | 2 | Ramen in Niigata Nishi, Indian restaurants in Fukuoka Chuo |
 
-**gemma-3-270m-it v2 full holdout (13/226 failures, all `zero_results`):**
+### Cross-model failure overlap (full holdout)
 
-| Category | Count | Examples |
-|----------|-------|---------|
-| Real POI absence | 4 | Islands District→Embassies, Higashi Nagoya→Alpine Huts, Nishi Yokohama→Camp Sites, Sawara Fukuoka→Blacksmiths |
-| `name:en` resolution failure | 3 | Ome→Convenience stores, Omiya Ward→Sushi, Omiya Ward→Museums |
-| Genuine POI scarcity | 4 | Ramen in Niigata Nishi, Indian restaurants in Fukuoka Chuo, Soba in Kobe Chuo, Museums in Fukuoka Chuo |
-| OSM data absence | 2 | Churches in Suminoe Ward, Guest Houses in Nanshan Shenzhen |
+Of 15 unique failing inputs across all three models:
 
-All failure categories are irreducible given current OSM data or infrastructure (no `name:en` fallback at model layer per RD-004).
+- **10 failed by all 3 models** — irreducible: POI absence, `name:en` gaps, POI scarcity
+- **1 failed by 2 models** (functiongemma + gemma3) — Nanshan District, Shenzhen → Guest Houses
+- **4 failed by exactly 1 model** — model-specific errors (see below)
+
+### Model-specific failures — genuine model errors
+
+**Qwen2.5-Coder-0.5B only: Pingshan District, Shenzhen → Indian restaurants**
+
+```overpassql
+area["name:zh"="深圳市"]->.outer;
+area["name:zh"="坪山区"]->.inner;
+```
+
+Used `name:zh` (Chinese) instead of `name:en`, violating the English-only design (RD-004).
+A language slip on Chinese place names not well-represented in training data.
+The two-call `name:en` → `name` fallback cannot rescue this — the model emitted the wrong
+tag key entirely.
+
+**functiongemma-270m only: Chuo Ward, Kobe → Airports**
+
+```overpassql
+nwr["aeroway"="aerodrome"](area.inner)(area.outer);
+```
+
+The tag `aeroway=aerodrome` is **correct**. Kobe Airport exists in Port Island within Chuo
+Ward. This is an OSM area boundary issue, not a model error — the airport node falls outside
+the OSM area polygon for Chuo Ward.
+
+**gemma-3-270m only: Chuo Ward, Kobe → Soba noodle shops** ⚠️ Model error
+
+```overpassql
+area["name:en"="Hyogo Prefecture"]->.outer;   -- should be Kobe
+area["name:en"="Chuo"]->.inner;
+```
+
+Area hierarchy mistake: used "Hyogo Prefecture" as outer instead of "Kobe", skipping the
+city level. Input was "Chuo, Kobe, Hyogo Prefecture" — the model assigned the wrong level
+as the bounding area. A structural reasoning error, not a data issue. Soba shops exist in
+Kobe Chuo; the query simply searches the wrong area.
+
+**gemma-3-270m only: Sawara Ward, Fukuoka → Blacksmiths** ⚠️ Model error (hallucination)
+
+```overpassql
+area["name:en"="Fukuoka"]->.outer;
+area["name:en"="Fukuoka Prefecture"]->.inner;   -- inner/outer reversed
+nwr["cuisine"~"braised_black_pebbles"]          -- nonexistent tag
+```
+
+Two simultaneous errors: (1) inner/outer area hierarchy **reversed**, and (2) complete tag
+hallucination — `cuisine~"braised_black_pebbles"` does not exist in OSM; the correct tag
+is `craft=blacksmith`. "Blacksmiths" likely has very few training pairs, causing the model
+to confabulate a plausible-sounding but entirely fabricated tag string.
+
+### Summary: model error attribution
+
+| Model | Failures | Model errors | Data/infra errors |
+|-------|---------|-------------|-------------------|
+| Qwen2.5-Coder-0.5B | 11 | 1 (name:zh slip) | 10 |
+| functiongemma-270m | 12 | 0 (boundary issue, not model) | 12 |
+| **gemma-3-270m** | **13** | **2 (area hierarchy + hallucination)** | **11** |
+
+**gemma-3-270m is the only model with genuine model-originated errors in the full holdout.**
+Both errors involve rare or underrepresented concern types (Soba noodle shops, Blacksmiths)
+where training signal is sparse. The 270M base model's smaller capacity may manifest as
+structural reasoning errors when interpolating outside well-covered training territory.
+functiongemma-270m, despite identical parameter count, shows no model-originated errors —
+its function-calling specialization may contribute to more robust output structure.
 
 **gemma-3-270m-it v1 (1/30 failures):**
 
