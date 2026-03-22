@@ -2,7 +2,7 @@
 
 A synthetic dataset for training small language models to translate **TRIDENT intermediate language** into **Overpass QL** queries for OpenStreetMap.
 
-**Key result:** `Qwen2.5-Coder-0.5B-Instruct` fine-tuned with LoRA (PEFT + TRL) achieves **100.0% (112/112)** on guaranteed-nonempty strict evaluation and runs at **25.8 tok/s on Raspberry Pi 5** — making the full TRIDENT pipeline viable entirely offline on a $80 device.
+**Key result:** `Qwen2.5-Coder-0.5B-Instruct` fine-tuned with LoRA (PEFT + TRL) achieves **100.0% (112/112)** on a held-out evaluation set of pairs that are (1) excluded from training data and (2) guaranteed to return non-empty results from the Overpass API. Runs at **25.8 tok/s on Raspberry Pi 5** — making the full TRIDENT pipeline viable entirely offline on a $80 device.
 
 Published dataset: **[yuiseki/text2geoql](https://huggingface.co/datasets/yuiseki/text2geoql)** on Hugging Face Hub
 
@@ -58,7 +58,7 @@ This dataset targets the **deep layer**: translating structured `AreaWithConcern
 - All queries verified against the public Overpass API — every saved query returns ≥ 1 real OSM element
 - **148 POI categories** across transport, accommodation, food & drink, shopping, health & medical, education, finance, public facilities, parks & nature, sport, tourism, historic & heritage, places of worship, craft & artisan, and natural features
 - **Geographic coverage:** Japan (Tokyo, Osaka, Sapporo, Sendai, Nagoya, Fukuoka, Kyoto, Kobe, Naha…), South Korea (Seoul, Busan, Daegu, Incheon…), Europe (London, Paris, Munich, Rome, Amsterdam, Warsaw, Florence, Valencia…), Asia-Pacific (Singapore, Taipei, Melbourne, Sydney, Bangkok…), Africa, Americas, and more
-- **LoRA fine-tuning** — `Qwen2.5-Coder-0.5B-Instruct` with PEFT+TRL (no Unsloth) achieves **100.0% (112/112) on guaranteed-nonempty strict evaluation** (v4.2 adapter); see [RF-004](docs/research_findings/RF-004-lora-ft-eliminates-few-shot-need.md) and [RF-009](docs/research_findings/RF-009-v4-multilevel-augmentation.md)
+- **LoRA fine-tuning** — `Qwen2.5-Coder-0.5B-Instruct` with PEFT+TRL (no Unsloth) achieves **100.0% (112/112)** on a held-out eval set of pairs excluded from training and guaranteed to return non-empty Overpass API results (v4.2 adapter); see [RF-004](docs/research_findings/RF-004-lora-ft-eliminates-few-shot-need.md) and [RF-009](docs/research_findings/RF-009-v4-multilevel-augmentation.md)
 - **Raspberry Pi 5 deployment confirmed** — GGUF-quantized model runs on Raspberry Pi 5 (8 GB RAM) via llama.cpp:
 
 | Quantization | Size | Generation speed | ~100-token query |
