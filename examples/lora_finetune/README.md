@@ -3,15 +3,15 @@
 Fine-tune `Qwen2.5-Coder-0.5B-Instruct` on the text2geoql dataset using PEFT + TRL.
 
 This example demonstrates that a 0.5B model with **no Few-Shot prompting** can reach
-**93.3% accuracy** on the Overpass API benchmark after LoRA fine-tuning — compared to
-**0% (base)** and the **47% Few-Shot baseline** (see RF-004).
+**100.0% accuracy** (112/112) on the guaranteed-nonempty strict evaluation (v4.2 adapter)
+— compared to **0% (base)** and the **47% Few-Shot baseline** (see RF-004, RF-009).
 
 ## Hardware
 
 | Item | Spec |
 |------|------|
 | GPU | NVIDIA GeForce RTX 3060 (12 GB VRAM) |
-| Training time | ~12 minutes (3 epochs, 4278 pairs) |
+| Training time | ~12 minutes (3 epochs, ~4,900 pairs) |
 | Adapter size | ~35 MB |
 
 CPU-only is also supported (much slower).
@@ -61,14 +61,24 @@ uv run python examples/lora_finetune/evaluate.py \
 
 ## Results
 
+### Overpass API benchmark (30 held-out pairs)
+
 | Condition | Score | Primary failure |
 |-----------|-------|-----------------|
 | Base 0.5B (no FT, no Few-Shot) | 0.0% (0/30) | `no_code_block` — repeats input verbatim |
 | Base 3B (no FT, Few-Shot k=5) | 47% (7/15) | `zero_results` |
-| **FT 0.5B LoRA (no Few-Shot)** | **93.3% (28/30)** | `zero_results` × 2 (POI doesn't exist in area) |
+| **FT 0.5B LoRA v1 (no Few-Shot)** | **93.3% (28/30)** | `zero_results` × 2 (POI doesn't exist in area) |
 
-The 2 remaining failures are data-level issues (e.g. no embassies in Hong Kong's Islands
-District), not model errors.
+### Guaranteed-nonempty strict evaluation (112 pairs — see `eval_guaranteed_nonempty.py`)
+
+All 112 pairs are verified to return ≥1 OSM element; the two-call `name:en→name` fallback is included.
+
+| Adapter | Score | Notes |
+|---------|-------|-------|
+| v3 | 92.0% (103/112) | Hierarchy inversion + Busan bug |
+| v4 | 94.6% (106/112) | Multi-level training data added |
+| v4.1 | 99.1% (111/112) | Test data fixed + system prompt + Europe pairs |
+| **v4.2** | **100.0% (112/112)** | Ward suffix convention added |
 
 ## LoRA Hyperparameters
 
@@ -89,7 +99,9 @@ District), not model errors.
 
 | File | Description |
 |------|-------------|
-| `dataset.py` | Loads training pairs, formats Qwen chat template prompts |
+| `dataset.py` | Loads training pairs, formats chat template prompts (any tokenizer) |
 | `train.py` | LoRA fine-tuning with PEFT + TRL SFTTrainer |
 | `evaluate.py` | Benchmark evaluation with real Overpass API scoring |
+| `eval_guaranteed_nonempty.py` | Strict eval on 112 guaranteed-nonempty pairs with two-call fallback |
+| `precheck_candidates.py` | Pre-screen candidate pairs via Overpass API before adding to dataset |
 | `requirements.txt` | Python dependencies |

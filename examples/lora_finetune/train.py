@@ -1,19 +1,10 @@
-"""Fine-tune Qwen2.5-Coder-0.5B-Instruct on text2geoql with LoRA + SFTTrainer.
-
-Uses PEFT + TRL (no Unsloth) for stability and portability.
-
-Unsloth is intentionally avoided due to known LoRA save/load bugs:
-  https://github.com/unslothai/unsloth/issues/1670
-  https://github.com/unslothai/unsloth/issues/1805
-
-Hardware used in the original experiment:
-  GPU : NVIDIA GeForce RTX 3060 (12 GB VRAM)
-  Training time : ~12 minutes for 3 epochs on 4278 pairs
+"""Fine-tune Qwen2.5-Coder-0.5B-Instruct with LoRA + SFTTrainer (no Unsloth).
 
 Usage:
-    uv run python examples/lora_finetune/train.py
-    uv run python examples/lora_finetune/train.py --epochs 3 --batch-size 4
-    uv run python examples/lora_finetune/train.py --output-dir /path/to/adapter
+    uv run python src/train.py
+    uv run python src/train.py --model Qwen/Qwen2.5-Coder-0.5B-Instruct
+    uv run python src/train.py --output-dir models/qwen2.5-coder-0.5b-lora
+    uv run python src/train.py --epochs 3 --batch-size 4
 """
 
 from __future__ import annotations
@@ -33,14 +24,11 @@ DEFAULT_BATCH_SIZE = 8
 DEFAULT_LR = 2e-4
 DEFAULT_MAX_SEQ_LEN = 512
 
-# LoRA hyperparameters (r=16 is sufficient; higher r showed no improvement)
+# LoRA hyperparameters
 LORA_R = 16
 LORA_ALPHA = 32
 LORA_DROPOUT = 0.05
-LORA_TARGET_MODULES = [
-    "q_proj", "k_proj", "v_proj", "o_proj",
-    "gate_proj", "up_proj", "down_proj",
-]
+LORA_TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
 
 
 def train(
@@ -62,31 +50,36 @@ def train(
     print(f"Output: {output_dir}")
     print(f"CUDA: {torch.cuda.is_available()}, devices: {torch.cuda.device_count()}")
 
-    # ── dataset ───────────────────────────────────────────────────────────────
-    print("\nLoading training pairs...")
-    pairs = load_pairs(dataset_dir)
-    pairs = [p for p in pairs if p.input_text.startswith("AreaWithConcern:")]
-    print(f"  {len(pairs)} AreaWithConcern pairs")
-
-    hf_ds = build_hf_dataset(pairs, val_ratio=0.05, seed=42)
-    print(f"  train={len(hf_ds['train'])}, val={len(hf_ds['validation'])}")
-
     # ── tokenizer ─────────────────────────────────────────────────────────────
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    # ── model (fp16, no quantization needed for 0.5B on 12 GB VRAM) ──────────
+    # ── load dataset ──────────────────────────────────────────────────────────
+    print("\nLoading training pairs...")
+    pairs = load_pairs(dataset_dir)
+    # Filter to AreaWithConcern: only (exclude bare Area: admin stubs)
+    pairs = [p for p in pairs if p.input_text.startswith("AreaWithConcern:")]
+    print(f"  {len(pairs)} AreaWithConcern pairs")
+
+    hf_ds = build_hf_dataset(pairs, val_ratio=0.05, seed=42, tokenizer=tokenizer)
+    print(f"  train={len(hf_ds['train'])}, val={len(hf_ds['validation'])}")
+
+    # ── model ─────────────────────────────────────────────────────────────────
+    # Gemma 3 requires bfloat16; other models work fine with float16
     device_map = "auto" if torch.cuda.is_available() else "cpu"
+    dtype = torch.bfloat16 if "gemma" in model_id.lower() else (
+        torch.float16 if torch.cuda.is_available() else torch.float32
+    )
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+        dtype=dtype,
         device_map=device_map,
         trust_remote_code=True,
     )
     model.config.use_cache = False
 
-    # ── LoRA via PEFT ─────────────────────────────────────────────────────────
+    # ── LoRA via PEFT (not Unsloth) ───────────────────────────────────────────
     lora_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         r=LORA_R,
@@ -98,7 +91,7 @@ def train(
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
 
-    # ── SFTConfig + SFTTrainer ────────────────────────────────────────────────
+    # ── SFT config (TrainingArguments + SFT-specific params) ──────────────────
     os.makedirs(output_dir, exist_ok=True)
     sft_config = SFTConfig(
         output_dir=output_dir,
@@ -109,7 +102,8 @@ def train(
         learning_rate=learning_rate,
         lr_scheduler_type="cosine",
         warmup_steps=int(0.05 * len(hf_ds["train"]) // (batch_size * 2)),
-        fp16=torch.cuda.is_available(),
+        fp16=torch.cuda.is_available() and "gemma" not in model_id.lower(),
+        bf16=torch.cuda.is_available() and "gemma" in model_id.lower(),
         logging_steps=50,
         eval_strategy="epoch",
         save_strategy="epoch",
@@ -117,22 +111,24 @@ def train(
         metric_for_best_model="eval_loss",
         report_to="none",
         dataloader_drop_last=False,
+        # SFT-specific
         max_length=max_seq_len,
         dataset_text_field="text",
     )
 
+    # ── SFTTrainer ────────────────────────────────────────────────────────────
     trainer = SFTTrainer(
         model=model,
         args=sft_config,
         train_dataset=hf_ds["train"],
         eval_dataset=hf_ds["validation"],
-        processing_class=tokenizer,  # renamed from 'tokenizer' in TRL 0.29+
+        processing_class=tokenizer,
     )
 
     print("\nStarting training...")
     trainer.train()
 
-    # ── save LoRA adapter ─────────────────────────────────────────────────────
+    # ── save LoRA adapter (standard PEFT save, no Unsloth) ────────────────────
     print(f"\nSaving LoRA adapter to {output_dir} ...")
     trainer.model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)

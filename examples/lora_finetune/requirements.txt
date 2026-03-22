@@ -1,7 +1,10 @@
 accelerate>=1.13.0
+bitsandbytes>=0.49.2
 datasets>=4.8.3
 httpx>=0.27.0
+huggingface-hub>=0.30.0
 peft>=0.18.1
+sentencepiece>=0.2.0
 torch>=2.4.0
 transformers>=4.46.0
 trl>=0.29.1
