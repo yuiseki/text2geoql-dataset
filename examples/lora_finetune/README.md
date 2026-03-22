@@ -10,7 +10,7 @@ This example demonstrates that a 0.5B model with **no Few-Shot prompting** can r
 
 | Item | Spec |
 |------|------|
-| GPU | NVIDIA GeForce RTX 3060 (12 GB VRAM) |
+| GPU | NVIDIA GeForce RTX 3060 × 2 (12 GB VRAM each) |
 | Training time | ~12 minutes (3 epochs, ~4,900 pairs) |
 | Adapter size | ~35 MB |
 
