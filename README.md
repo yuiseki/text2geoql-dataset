@@ -47,7 +47,7 @@ The key entries for this dataset are `AreaWithConcern` (and `Area`), which expre
 
 The deep layer of TRIDENT — translating `AreaWithConcern: Shinjuku, Tokyo, Japan; Cafes` into valid, grounded Overpass QL — is the task this dataset targets.
 
-**The ambition:** fine-tune a **≤ 1B parameter LLM** specialized for this narrow task using [PEFT](https://github.com/huggingface/peft) + [TRL](https://github.com/huggingface/trl) (LoRA, no Unsloth). A 0.5B model fast enough to run on a Raspberry Pi 5 (8 GB RAM) would make the full TRIDENT pipeline viable entirely offline.
+**The goal:** fine-tune a **≤ 1B parameter LLM** specialized for this narrow task using [PEFT](https://github.com/huggingface/peft) + [TRL](https://github.com/huggingface/trl) (LoRA, no Unsloth). A 0.5B model fast enough to run on a Raspberry Pi 5 (8 GB RAM) would make the full TRIDENT pipeline viable entirely offline — **and this has been achieved** (see below).
 
 ---
 
@@ -57,8 +57,14 @@ The deep layer of TRIDENT — translating `AreaWithConcern: Shinjuku, Tokyo, Jap
 - All queries verified against the public Overpass API — every saved query returns ≥ 1 real OSM element
 - **148 POI categories** across transport, accommodation, food & drink, shopping, health & medical, education, finance, public facilities, parks & nature, sport, tourism, historic & heritage, places of worship, craft & artisan, and natural features
 - Geographic coverage: Japan (Tokyo, Osaka, Sapporo, Sendai, Nagoya, Fukuoka, Kyoto, Kobe, Naha…), South Korea (Seoul, Busan, Daegu, Incheon…), Europe (London, Paris, Munich, Rome, Amsterdam, Warsaw, Florence, Valencia…), Asia-Pacific (Singapore, Taipei, Melbourne, Sydney, Bangkok…), Africa, Americas, and more
-- **LoRA fine-tuning PoC** — `Qwen2.5-Coder-0.5B-Instruct` with PEFT+TRL (no Unsloth) achieves **99.1% (111/112) on guaranteed-nonempty strict evaluation** (v4.1 adapter); see [RF-004](docs/research_findings/RF-004-lora-ft-eliminates-few-shot-need.md) and [RF-009](docs/research_findings/RF-009-v4-multilevel-augmentation.md)
-- **Edge deployment ready**: GGUF-quantized model (Q8_0: 507 MB, Q4_K_M: 380 MB) for llama.cpp on Raspberry Pi 5
+- **LoRA fine-tuning** — `Qwen2.5-Coder-0.5B-Instruct` with PEFT+TRL (no Unsloth) achieves **100.0% (112/112) on guaranteed-nonempty strict evaluation** (v4.2 adapter); see [RF-004](docs/research_findings/RF-004-lora-ft-eliminates-few-shot-need.md) and [RF-009](docs/research_findings/RF-009-v4-multilevel-augmentation.md)
+- **Raspberry Pi 5 deployment confirmed**: GGUF-quantized model runs on Raspberry Pi 5 (8 GB RAM) via llama.cpp with practical inference speed:
+
+| Quantization | Size | Generation speed | ~100-token query |
+|---|---|---|---|
+| Q4_K_M | 380 MB | **25.8 tok/s** | ~4 sec |
+| Q8_0 | 507 MB | 19.3 tok/s | ~5 sec |
+| F16 | 949 MB | 11.6 tok/s | ~9 sec |
 
 ---
 
@@ -155,11 +161,11 @@ The two-call fallback strategy (→ [RF-008](docs/research_findings/RF-008-two-c
 
 ### Near-term
 - [x] Expand POI categories to 148 via OSM approved tags survey
-- [x] LoRA fine-tuning PoC — Qwen 0.5B: 99.1% on 112-pair guaranteed-nonempty eval
+- [x] LoRA fine-tuning — Qwen 0.5B: 100.0% (112/112) on guaranteed-nonempty eval (v4.2)
 - [x] Multi-level training data (3-level JP cities, 2-level Korean/world cities)
 - [x] Two-call `name:en` → `name` fallback infrastructure
-- [x] GGUF quantization (Q8_0, Q4_K_M) for Raspberry Pi 5 deployment
-- [ ] Raspberry Pi 5 llama.cpp inference benchmark (tok/sec, quality)
+- [x] GGUF quantization (Q8_0, Q4_K_M, F16) for Raspberry Pi 5 deployment
+- [x] Raspberry Pi 5 llama.cpp inference benchmark — Q4_K_M: **25.8 tok/s**, fully practical
 - [ ] Add more cities' administrative wards (Osaka, Nagoya, Fukuoka, Kyoto…)
 
 ### Medium-term
@@ -168,7 +174,7 @@ The two-call fallback strategy (→ [RF-008](docs/research_findings/RF-008-two-c
 - [ ] Multi-language TRIDENT input (Japanese/Korean input → English OSM tags)
 
 ### Long-term
-- [ ] Ship a fine-tuned model that runs fully offline on Raspberry Pi 5 (8 GB RAM)
+- [x] ~~Ship a fine-tuned model that runs fully offline on Raspberry Pi 5 (8 GB RAM)~~ **Done** — Q4_K_M at 25.8 tok/s on Pi 5
 - [ ] Integrate with TRIDENT deep layer in production
 
 ---
