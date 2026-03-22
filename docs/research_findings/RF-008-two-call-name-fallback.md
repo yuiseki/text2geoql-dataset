@@ -104,6 +104,73 @@ only rewrites area filter tags, not POI tags, so it cannot recover this failure.
 Classes 1 (hierarchy inversion) and 2 (name:en missing) are now resolved by the fallback.
 Qwen has zero remaining failures.
 
+## OSM `name:en` Tagging Conventions
+
+Understanding why `name:en` is absent in OSM for certain areas is important for
+scoping the fallback strategy correctly. Three distinct patterns were identified
+through systematic Overpass verification (v4.1 dataset augmentation work):
+
+### Pattern A — Native name equals English name (most common)
+
+Many cities and regions outside the English-speaking world do not have a `name:en`
+tag because OSM contributors follow the convention of omitting `name:en` when it
+would be identical to `name`. Examples confirmed via Overpass:
+
+| Area | `name` | `name:en` | Notes |
+|------|--------|-----------|-------|
+| Düsseldorf | `"Düsseldorf"` (2) | absent | German name = English name |
+| Stuttgart | `"Stuttgart"` (7) | absent | German name = English name |
+| Bilbao | `"Bilbao"` (13) | absent | Basque/Spanish name = English name |
+| Bordeaux | `"Bordeaux"` (24) | absent | French name = English name |
+| Paris | `"Paris"` | absent | French name = English name |
+
+For these areas, the two-call fallback (`["name:en"=X]` → `["name"=X]`) recovers
+the query because the string value is unchanged — only the tag key changes.
+
+### Pattern B — English name differs from native name (accent/script)
+
+Some cities have a `name:en` that differs from `name` due to diacritics or
+transliteration:
+
+| Area | `name` | `name:en` |
+|------|--------|-----------|
+| Kraków | `"Kraków"` | `"Krakow"` (no accent) |
+| Wrocław | `"Wrocław"` | absent (not `"Wroclaw"`) |
+| Île-de-France | `"Île-de-France"` | `"Ile-de-France"` (no accent) |
+
+For Wrocław, `name:en` is absent entirely. The fallback resolves it via `name`.
+For Île-de-France, the accent mismatch causes the model's generated `"Île-de-France"`
+to not match OSM's `"Ile-de-France"` — also recovered by the fallback.
+
+### Pattern C — Administrative hierarchy not in OSM (unrecoverable by fallback)
+
+Some city areas exist in OSM but are not linked into the administrative relation
+hierarchy of their containing region. In Overpass QL, `(area.inner)(area.outer)`
+requires the inner area's relation to be a child of the outer area's relation.
+If that parent-child link is absent, the query returns zero regardless of geographic
+overlap. Examples:
+
+- `Marseille` inside `Provence-Alpes-Côte d'Azur`: `name:en="Marseille"` exists (1 area)
+  but cafes query returns 0 — the area relation is not linked into the region hierarchy.
+- `Bilbao` inside `Basque Country`: both tags exist, but containment link absent.
+
+The two-call fallback does **not** fix Pattern C failures because the issue is the
+area filter structure, not the tag key. A single-area fallback (drop the outer filter)
+would be needed for these cases.
+
+### Practical scope of the two-call fallback
+
+| Pattern | Example | Fallback fixes? |
+|---------|---------|----------------|
+| A — name = name:en, tag absent | Düsseldorf, Bordeaux | ✅ Yes |
+| B — name:en accent mismatch | Île-de-France | ✅ Yes |
+| B — name:en absent, native differs | Wrocław | ✅ Yes (via `name`) |
+| C — admin hierarchy gap | Marseille/Provence | ❌ No |
+
+Pattern A and B together cover the vast majority of real-world `name:en` gaps.
+Pattern C is relatively rare and requires a separate mitigation (single-area fallback
+or OSM data improvement).
+
 ## Key Findings
 
 ### 1. Two-call fallback eliminates all name:en coverage failures (+20% for all models)
