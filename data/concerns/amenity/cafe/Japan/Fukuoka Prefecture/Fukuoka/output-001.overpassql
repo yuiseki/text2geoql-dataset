@@ -1,0 +1,7 @@
+[out:json][timeout:30];
+area["name:en"="Fukuoka Prefecture"]->.outer;
+area["name:en"="Fukuoka"]->.inner;
+(
+  nwr["amenity"="cafe"](area.inner)(area.outer);
+);
+out geom;
