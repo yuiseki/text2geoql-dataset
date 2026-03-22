@@ -3,7 +3,7 @@
 text2geoql-dataset が扱う「OSM データに対する NLP・LLM の適用」に特化した研究群。
 汎用地理空間 AI は除外し、OpenStreetMap に固有の研究のみを対象とする。
 
-> **調査経緯:** TIMELINE_PAPER.md / TIMELINE_PROJECT.md（本プロジェクトの先行研究調査資料）は
+> **調査経緯:** [TIMELINE_PAPER.md](https://github.com/yuiseki/NLP2025-tutorial-2/blob/main/TIMELINE_PAPER.md) / [TIMELINE_PROJECT.md](https://github.com/yuiseki/NLP2025-tutorial-2/blob/main/TIMELINE_PROJECT.md)（本プロジェクトの先行研究調査資料）は
 > 2025-02 頃に手動で作成され、2025-03 の言語処理学会 NLP2025 での発表に使用された。
 > 本サーベイはそれ以降（2026-03）に Web 検索で補完したものであり、
 > **OsmT（arXiv 2024-12）と SPOT v2（ACL Demo 2025）は発表時点では未把握**だった。
