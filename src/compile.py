@@ -3,6 +3,64 @@
 import os
 
 import datasets
+from huggingface_hub import DatasetCard, DatasetCardData
+
+
+DATASET_CARD = """\
+---
+license: cc0-1.0
+language:
+- en
+task_categories:
+- other
+tags:
+- openstreetmap
+- overpass-ql
+- geospatial
+- text2sql
+- synthetic
+---
+
+# text2geoql
+
+A synthetic dataset for training small language models to translate **TRIDENT intermediate language** into **Overpass QL** queries for OpenStreetMap.
+
+## Task
+
+Given a `AreaWithConcern` instruction, generate a valid Overpass QL query:
+
+**Input:**
+```
+AreaWithConcern: Shinjuku, Tokyo, Japan; Cafes
+```
+
+**Output:**
+```overpassql
+[out:json][timeout:30];
+area["name:en"="Tokyo"]->.outer;
+area["name:en"="Shinjuku"]->.inner;
+(
+  nwr["amenity"="cafe"](area.inner)(area.outer);
+);
+out geom;
+```
+
+Areas are listed **smallest to largest** — first token is the innermost area (inner filter), each subsequent token is a larger containing area (outer filter).
+
+## Key result
+
+`Qwen2.5-Coder-0.5B-Instruct` fine-tuned with LoRA (PEFT + TRL) achieves **100.0% (112/112)** on guaranteed-nonempty strict evaluation and runs at **25.8 tok/s on Raspberry Pi 5** (Q4_K_M, llama.cpp).
+
+## Dataset
+
+- ~4,900 validated training pairs
+- All queries verified against the public Overpass API (≥ 1 element returned)
+- 148 POI categories, global geographic coverage
+
+## Source
+
+GitHub: [yuiseki/text2geoql-dataset](https://github.com/yuiseki/text2geoql-dataset)
+"""
 
 
 def collect_text2geoql_files(directory: str) -> list[dict[str, str]]:
@@ -34,3 +92,7 @@ if __name__ == "__main__":
     my_dataset = datasets.Dataset.from_list(records)
     print(my_dataset)
     my_dataset.push_to_hub("yuiseki/text2geoql")
+
+    card = DatasetCard(DATASET_CARD)
+    card.push_to_hub("yuiseki/text2geoql")
+    print("Dataset card updated (license: cc0-1.0)")
