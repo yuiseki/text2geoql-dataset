@@ -6,6 +6,8 @@ A synthetic dataset for training small language models to translate **TRIDENT in
 
 Published dataset: **[yuiseki/text2geoql](https://huggingface.co/datasets/yuiseki/text2geoql)** on Hugging Face Hub
 
+Published model (GGUF): **[yuiseki/qwen2.5-coder-0.5b-trident-deep-v4.2-gguf](https://huggingface.co/yuiseki/qwen2.5-coder-0.5b-trident-deep-v4.2-gguf)** on Hugging Face Hub
+
 ---
 
 ## What it does
