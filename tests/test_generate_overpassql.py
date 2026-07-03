@@ -2,9 +2,14 @@
 
 import hashlib
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
-from generate_overpassql import example_matches, generate_overpassql, save_overpassql
+from generate_overpassql import (
+    example_matches,
+    generate_overpassql,
+    generate_overpassql_llama_server,
+    save_overpassql,
+)
 from meta import GenerationMeta
 
 
@@ -40,6 +45,47 @@ class TestGenerateOverpassql:
         with patch("generate_overpassql.ollama.generate", return_value={"response": llm_output}) as mock_gen:
             generate_overpassql("prompt", model="custom-model:7b")
         assert "custom-model:7b" in str(mock_gen.call_args)
+
+
+class TestGenerateOverpassqlLlamaServer:
+    def test_extracts_code_block(self) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "content": "Here is the query:\n```\n[out:json];nwr[amenity=cafe];out geom;\n```"
+        }
+        mock_response.raise_for_status.return_value = None
+        with patch("generate_overpassql.httpx.post", return_value=mock_response) as mock_post:
+            query, reason = generate_overpassql_llama_server("some prompt", base_url="http://127.0.0.1:1234")
+        assert query == "[out:json];nwr[amenity=cafe];out geom;"
+        assert reason == ""
+        args, kwargs = mock_post.call_args
+        assert args[0] == "http://127.0.0.1:1234/completion"
+        assert kwargs["json"]["prompt"] == "some prompt"
+
+    def test_returns_none_when_no_code_block(self) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"content": "I cannot generate a query for this."}
+        mock_response.raise_for_status.return_value = None
+        with patch("generate_overpassql.httpx.post", return_value=mock_response):
+            query, reason = generate_overpassql_llama_server("some prompt", base_url="http://x")
+        assert query is None
+        assert reason == "no_code_block"
+
+    def test_returns_none_when_too_many_lines(self) -> None:
+        long_query = "\n".join([f"line{i}" for i in range(25)])
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"content": f"```\n{long_query}\n```"}
+        mock_response.raise_for_status.return_value = None
+        with patch("generate_overpassql.httpx.post", return_value=mock_response):
+            query, reason = generate_overpassql_llama_server("some prompt", base_url="http://x")
+        assert query is None
+        assert reason == "too_many_lines"
+
+    def test_returns_server_error_on_connection_failure(self) -> None:
+        with patch("generate_overpassql.httpx.post", side_effect=Exception("connection refused")):
+            query, reason = generate_overpassql_llama_server("some prompt", base_url="http://x")
+        assert query is None
+        assert reason.startswith("server_error")
 
 
 class TestExampleMatches:

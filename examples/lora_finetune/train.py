@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from dataset import DATASET_DIR, build_hf_dataset, load_pairs
+from dataset import DATASET_DIR, build_hf_dataset, load_pairs, requires_bf16
 
 DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-0.5B-Instruct"
 DEFAULT_OUTPUT_DIR = "models/qwen2.5-coder-0.5b-lora"
@@ -29,6 +29,13 @@ LORA_R = 16
 LORA_ALPHA = 32
 LORA_DROPOUT = 0.05
 LORA_TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+# Apertus's MLP (xIELU activation) has no gate_proj — only up_proj/down_proj.
+LORA_TARGET_MODULES_NO_GATE = ["q_proj", "k_proj", "v_proj", "o_proj", "up_proj", "down_proj"]
+
+
+def lora_target_modules(model_id: str) -> list[str]:
+    """Return the LoRA target module list appropriate for model_id's architecture."""
+    return LORA_TARGET_MODULES_NO_GATE if "apertus" in model_id.lower() else LORA_TARGET_MODULES
 
 
 def train(
@@ -66,9 +73,9 @@ def train(
     print(f"  train={len(hf_ds['train'])}, val={len(hf_ds['validation'])}")
 
     # ── model ─────────────────────────────────────────────────────────────────
-    # Gemma 3 requires bfloat16; other models work fine with float16
+    # Gemma 3 and Apertus require bfloat16; other models work fine with float16
     device_map = "auto" if torch.cuda.is_available() else "cpu"
-    dtype = torch.bfloat16 if "gemma" in model_id.lower() else (
+    dtype = torch.bfloat16 if requires_bf16(model_id) else (
         torch.float16 if torch.cuda.is_available() else torch.float32
     )
     model = AutoModelForCausalLM.from_pretrained(
@@ -85,7 +92,7 @@ def train(
         r=LORA_R,
         lora_alpha=LORA_ALPHA,
         lora_dropout=LORA_DROPOUT,
-        target_modules=LORA_TARGET_MODULES,
+        target_modules=lora_target_modules(model_id),
         bias="none",
     )
     model = get_peft_model(model, lora_config)
@@ -102,8 +109,8 @@ def train(
         learning_rate=learning_rate,
         lr_scheduler_type="cosine",
         warmup_steps=int(0.05 * len(hf_ds["train"]) // (batch_size * 2)),
-        fp16=torch.cuda.is_available() and "gemma" not in model_id.lower(),
-        bf16=torch.cuda.is_available() and "gemma" in model_id.lower(),
+        fp16=torch.cuda.is_available() and not requires_bf16(model_id),
+        bf16=torch.cuda.is_available() and requires_bf16(model_id),
         logging_steps=50,
         eval_strategy="epoch",
         save_strategy="epoch",

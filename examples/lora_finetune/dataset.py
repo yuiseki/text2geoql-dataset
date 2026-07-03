@@ -36,6 +36,16 @@ SYSTEM_PROMPT = (
 )
 
 
+def requires_bf16(model_id: str) -> bool:
+    """Return True if model_id needs bfloat16 for numerical stability.
+
+    Gemma 3 and Apertus (xIELU-activation MLP) are unstable/underperform
+    under float16; both have been verified to work correctly under bf16.
+    """
+    key = model_id.lower()
+    return "gemma" in key or "apertus" in key
+
+
 @dataclass
 class TrainingPair:
     input_text: str    # content of input-trident.txt

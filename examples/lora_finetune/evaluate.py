@@ -30,7 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from dataset import DATASET_DIR, format_prompt, load_pairs
+from dataset import DATASET_DIR, format_prompt, load_pairs, requires_bf16
 
 DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-0.5B-Instruct"
 BENCHMARK_SAMPLE = 30   # number of pairs to evaluate (for speed)
@@ -201,8 +201,8 @@ def run_eval(
         tokenizer.pad_token = tokenizer.eos_token
 
     device_map = "auto" if torch.cuda.is_available() else "cpu"
-    # Gemma 3 requires bfloat16; other models work fine with float16
-    dtype = torch.bfloat16 if "gemma" in model_id.lower() else (
+    # Gemma 3 and Apertus require bfloat16; other models work fine with float16
+    dtype = torch.bfloat16 if requires_bf16(model_id) else (
         torch.float16 if torch.cuda.is_available() else torch.float32
     )
     base_model = AutoModelForCausalLM.from_pretrained(

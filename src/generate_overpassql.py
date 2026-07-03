@@ -4,6 +4,7 @@ import hashlib
 import os
 import sys
 
+import httpx
 import ollama
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
@@ -20,6 +21,7 @@ MAX_QUERY_LINES = 20
 DEFAULT_TEMPERATURE = 0.01
 DEFAULT_NUM_PREDICT = 256
 DEFAULT_NUM_PREDICT_THINKING = 2048  # thinking consumes tokens before response
+DEFAULT_LLAMA_SERVER_REQUEST_TIMEOUT = 120.0
 
 # Models that enable thinking by default when think=None
 _REASONING_FAMILIES = ("qwen3", "qwen3.5")
@@ -136,6 +138,22 @@ def build_prompt(instruct: str, data_dir: str) -> str:
     return prompt_template.format(question=instruct)
 
 
+def _extract_overpassql_block(raw_text: str) -> tuple[str | None, str]:
+    """Extract and validate an OverpassQL code block from raw LLM text.
+
+    Shared by both the Ollama and llama-server backends. Same contract as
+    generate_overpassql(): returns (query, failure_reason).
+    """
+    parts = raw_text.split("```")
+    if len(parts) < 2:
+        return None, "no_code_block"
+    overpassql = parts[1].strip()
+    lines = overpassql.split("\n")
+    if len(lines) == 0 or len(lines) > MAX_QUERY_LINES:
+        return None, "too_many_lines"
+    return overpassql, ""
+
+
 def generate_overpassql(
     prompt: str,
     model: str = OLLAMA_MODEL,
@@ -163,14 +181,37 @@ def generate_overpassql(
         think=think,
         options=options,
     )
-    parts = response["response"].split("```")
-    if len(parts) < 2:
-        return None, "no_code_block"
-    overpassql = parts[1].strip()
-    lines = overpassql.split("\n")
-    if len(lines) == 0 or len(lines) > MAX_QUERY_LINES:
-        return None, "too_many_lines"
-    return overpassql, ""
+    return _extract_overpassql_block(response["response"])
+
+
+def generate_overpassql_llama_server(
+    prompt: str,
+    base_url: str,
+    temperature: float = DEFAULT_TEMPERATURE,
+    num_predict: int = DEFAULT_NUM_PREDICT,
+    request_timeout: float | None = DEFAULT_LLAMA_SERVER_REQUEST_TIMEOUT,
+) -> tuple[str | None, str]:
+    """Call a running llama-server's /completion endpoint and extract the OverpassQL block.
+
+    Mirrors generate_overpassql() but targets llama.cpp's llama-server HTTP
+    API instead of Ollama. base_url example: "http://127.0.0.1:51234".
+
+    Uses /completion (not /v1/chat/completions) because the existing
+    Few-Shot prompt from build_prompt() is already a raw completion-style
+    string — this matches how ollama.generate(prompt=...) is used today, so
+    no chat-template handling is introduced.
+
+    Returns (query, failure_reason); failure_reason may additionally be
+    "server_error: ..." for HTTP/connection failures against llama-server.
+    """
+    payload = {"prompt": prompt, "temperature": temperature, "n_predict": num_predict}
+    try:
+        response = httpx.post(f"{base_url}/completion", json=payload, timeout=request_timeout)
+        response.raise_for_status()
+        data = response.json()
+    except Exception as e:
+        return None, f"server_error: {e}"
+    return _extract_overpassql_block(data.get("content", ""))
 
 
 def save_overpassql(

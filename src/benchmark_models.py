@@ -37,6 +37,9 @@ Usage:
     uv run python src/benchmark_models.py --models gemma3:12b --no-think --num-ctx 32768
     uv run python src/benchmark_models.py --models gpt-oss:20b --no-think --num-ctx 128000
 
+    # Apertus (llama-server backend, requires `llama-server` on PATH):
+    uv run python src/benchmark_models.py --group apertus --trials 3
+
 Output:
     Per-model JSON written immediately to tmp/benchmark-{slug}-{timestamp}.json
     Summary table printed after each model completes.
@@ -52,7 +55,13 @@ from pathlib import Path
 
 import ollama
 
-from generate_overpassql import build_prompt, generate_overpassql, default_num_predict
+from generate_overpassql import (
+    build_prompt,
+    default_num_predict,
+    generate_overpassql,
+    generate_overpassql_llama_server,
+)
+from llama_server_backend import GgufModelSpec, is_llama_server_available, llama_server_session
 from meta import model_to_slug
 from overpass import fetch_elements
 
@@ -169,8 +178,26 @@ MODEL_GROUPS: dict[str, list[str]] = {
     ],
 }
 
+# GGUF models served via llama-server instead of Ollama (see llama_server_backend.py).
+# Names are friendly labels, not Ollama tags — they contain no ":" or "/" so
+# model_to_slug() handles them unchanged.
+APERTUS_MODELS: dict[str, GgufModelSpec] = {
+    "apertus-0.5b-base": GgufModelSpec(hf_repo="NonMiFrega/Apertus-v1.1-0.5B-Q4_K_M-GGUF"),
+    "apertus-0.5b-instruct": GgufModelSpec(hf_repo="MrMeOrYou/Apertus-v1.1-0.5B-Instruct-Q4_K_M-GGUF"),
+    "apertus-1.5b-base": GgufModelSpec(hf_repo="NonMiFrega/Apertus-v1.1-1.5B-Q4_K_M-GGUF"),
+    "apertus-1.5b-instruct": GgufModelSpec(
+        hf_repo="MrMeOrYou/Apertus-v1.1-1.5B-Instruct-GGUF", quant="Q4_K_M",
+    ),
+}
+MODEL_GROUPS["apertus"] = list(APERTUS_MODELS.keys())
+
 DEFAULT_GROUP = "qwen2.5-coder"
 DEFAULT_MODELS = MODEL_GROUPS[DEFAULT_GROUP]
+
+
+def _model_backend(model: str) -> str:
+    """Return "llama_server" for GGUF/Apertus models, "ollama" for everything else."""
+    return "llama_server" if model in APERTUS_MODELS else "ollama"
 
 # Fixed evaluation set: diverse TRIDENT instructions
 EVAL_INSTRUCTIONS = [
@@ -205,15 +232,22 @@ def _run_one_query(
     num_predict: int,
     think: bool | None,
     num_ctx: int | None = None,
+    backend: str = "ollama",
+    base_url: str | None = None,
 ) -> dict[str, object]:
     """Run a single instruction through LLM + Overpass. Returns a result dict."""
     t0 = time.monotonic()
     prompt = build_prompt(instruct, data_dir)
     effective_num_predict = max(num_predict, default_num_predict(model, think=think))
-    query, failure_reason = generate_overpassql(
-        prompt, model=model, temperature=temperature, num_predict=effective_num_predict,
-        think=think, num_ctx=num_ctx,
-    )
+    if backend == "llama_server":
+        query, failure_reason = generate_overpassql_llama_server(
+            prompt, base_url=base_url, temperature=temperature, num_predict=effective_num_predict,
+        )
+    else:
+        query, failure_reason = generate_overpassql(
+            prompt, model=model, temperature=temperature, num_predict=effective_num_predict,
+            think=think, num_ctx=num_ctx,
+        )
     elapsed = time.monotonic() - t0
 
     if query is None:
@@ -259,6 +293,8 @@ def _probe_model(
     query_timeout: int,
     think: bool | None,
     num_ctx: int | None = None,
+    backend: str = "ollama",
+    base_url: str | None = None,
 ) -> dict:
     """Run all eval instructions against one model with per-query timeout."""
     results: list[dict[str, object]] = []
@@ -269,7 +305,7 @@ def _probe_model(
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
                     _run_one_query, instruct, model, data_dir, temperature, num_predict, think,
-                    num_ctx,
+                    num_ctx, backend, base_url,
                 )
                 try:
                     result = future.result(timeout=query_timeout)
@@ -381,14 +417,22 @@ def run_benchmark(
     }
 
     for model in models:
-        if skip_unavailable and not _is_model_available(model):
-            print(f"[SKIP] {model} — not pulled locally")
-            continue
+        backend = _model_backend(model)
+
+        if backend == "llama_server":
+            if skip_unavailable and not is_llama_server_available():
+                print(f"[SKIP] {model} — llama-server binary not found on PATH")
+                continue
+        else:
+            if skip_unavailable and not _is_model_available(model):
+                print(f"[SKIP] {model} — not pulled locally")
+                continue
 
         think_label = "think=default" if think is None else f"think={think}"
         n_queries = trials * len(EVAL_INSTRUCTIONS)
         print(f"\n[RUN]  {model}  ({n_queries} queries, {think_label}, timeout {query_timeout}s each)")
-        model_report = _probe_model(
+
+        probe_kwargs: dict = dict(
             model=model,
             instructions=EVAL_INSTRUCTIONS,
             data_dir=data_dir,
@@ -398,8 +442,24 @@ def run_benchmark(
             query_timeout=query_timeout,
             think=think,
             num_ctx=num_ctx,
+            backend=backend,
         )
-        model_report["think"] = think
+
+        try:
+            if backend == "llama_server":
+                spec = APERTUS_MODELS[model]
+                log_path = os.path.join(tmp_dir, f"llama-server-{model_to_slug(model)}.log")
+                # One server launch serves all EVAL_INSTRUCTIONS x trials queries
+                # for this model before shutting down.
+                with llama_server_session(spec, log_path=log_path) as base_url:
+                    model_report = _probe_model(**probe_kwargs, base_url=base_url)
+            else:
+                model_report = _probe_model(**probe_kwargs)
+        except (RuntimeError, TimeoutError) as e:
+            print(f"[SKIP] {model} — {e}")
+            continue
+
+        model_report["think"] = think if backend == "ollama" else None
         report["models"].append(model_report)
 
         # Save per-model result immediately so progress is preserved

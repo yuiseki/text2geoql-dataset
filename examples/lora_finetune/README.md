@@ -95,6 +95,14 @@ All 112 pairs are verified to return ≥1 OSM element; the two-call `name:en→n
 | lr_scheduler | cosine |
 | max_seq_len | 512 |
 
+## Testing
+
+Pure-function tests (no GPU/model loading required):
+
+```bash
+uv run pytest examples/lora_finetune/tests
+```
+
 ## Files
 
 | File | Description |
