@@ -15,7 +15,15 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from dataset import DATASET_DIR, build_hf_dataset, load_pairs, requires_bf16
+from dataset import (
+    DATASET_DIR,
+    INNER_SYSTEM_PROMPT,
+    SYSTEM_PROMPT,
+    build_hf_dataset,
+    load_inner_pairs,
+    load_pairs,
+    requires_bf16,
+)
 
 DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-0.5B-Instruct"
 DEFAULT_OUTPUT_DIR = "models/qwen2.5-coder-0.5b-lora"
@@ -47,6 +55,8 @@ def train(
     batch_size: int = DEFAULT_BATCH_SIZE,
     learning_rate: float = DEFAULT_LR,
     max_seq_len: int = DEFAULT_MAX_SEQ_LEN,
+    task: str = "deep",
+    pairs_jsonl: str | None = None,
 ) -> None:
     import torch
     from peft import LoraConfig, TaskType, get_peft_model
@@ -64,12 +74,27 @@ def train(
 
     # ── load dataset ──────────────────────────────────────────────────────────
     print("\nLoading training pairs...")
-    pairs = load_pairs(dataset_dir)
-    # Filter to AreaWithConcern: only (exclude bare Area: admin stubs)
-    pairs = [p for p in pairs if p.input_text.startswith("AreaWithConcern:")]
-    print(f"  {len(pairs)} AreaWithConcern pairs")
+    if task == "inner":
+        # The inner layer's pairs are assembled and validated elsewhere, so
+        # they arrive as a file rather than being walked out of data/concerns.
+        if not pairs_jsonl:
+            raise SystemExit("--task inner needs --pairs-jsonl")
+        pairs = load_inner_pairs(pairs_jsonl)
+        system_prompt = INNER_SYSTEM_PROMPT
+        print(f"  {len(pairs)} inner pairs from {pairs_jsonl}")
+    else:
+        pairs = load_pairs(dataset_dir)
+        # Filter to AreaWithConcern: only (exclude bare Area: admin stubs)
+        pairs = [p for p in pairs if p.input_text.startswith("AreaWithConcern:")]
+        system_prompt = SYSTEM_PROMPT
+        print(f"  {len(pairs)} AreaWithConcern pairs")
 
-    hf_ds = build_hf_dataset(pairs, val_ratio=0.05, seed=42, tokenizer=tokenizer)
+    if not pairs:
+        raise SystemExit("no training pairs found")
+
+    hf_ds = build_hf_dataset(
+        pairs, val_ratio=0.05, seed=42, tokenizer=tokenizer, system_prompt=system_prompt
+    )
     print(f"  train={len(hf_ds['train'])}, val={len(hf_ds['validation'])}")
 
     # ── model ─────────────────────────────────────────────────────────────────
@@ -151,6 +176,17 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     parser.add_argument("--lr", type=float, default=DEFAULT_LR)
     parser.add_argument("--max-seq-len", type=int, default=DEFAULT_MAX_SEQ_LEN)
+    parser.add_argument(
+        "--task",
+        choices=("deep", "inner"),
+        default="deep",
+        help="deep: intermediate language -> Overpass QL, read from data/concerns. "
+             "inner: human utterance -> intermediate language, read from --pairs-jsonl.",
+    )
+    parser.add_argument(
+        "--pairs-jsonl",
+        help="JSONL written by src/build_inner_trainset.py. Required for --task inner.",
+    )
     args = parser.parse_args()
 
     train(
@@ -161,6 +197,8 @@ def main() -> None:
         batch_size=args.batch_size,
         learning_rate=args.lr,
         max_seq_len=args.max_seq_len,
+        task=args.task,
+        pairs_jsonl=args.pairs_jsonl,
     )
 
 

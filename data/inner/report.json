@@ -1,5 +1,5 @@
 {
-  "record": "tmp/inner-pairs-production.jsonl",
+  "record": "data/inner/generated-pairs.jsonl",
   "rows_read": 7892,
   "pairs": {
     "n": 5875,

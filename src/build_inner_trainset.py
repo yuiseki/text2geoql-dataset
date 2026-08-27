@@ -155,6 +155,17 @@ def repaired_confirmation(row: dict) -> str:
     return CONFIRMATIONS.get(lang, CONFIRMATIONS["en"])
 
 
+def _style_line(written: str, concern: str) -> str:
+    """A style line with the seed's label and the model's glyph.
+
+    TRIDENT matches the colour and the emoji to the concern by name, so
+    "Airport" against "Airports" renders unstyled. The label is the seed's;
+    only what follows the comma is the model's.
+    """
+    value = written.rsplit(",", 1)[-1].strip() if "," in written else written.strip()
+    return f"{concern}, {value}" if value else ""
+
+
 def build_target(row: dict, *, repair_confirmation: bool = False) -> str:
     """The intermediate language block to train towards.
 
@@ -173,8 +184,8 @@ def build_target(row: dict, *, repair_confirmation: bool = False) -> str:
         "TitleOfMap": written.get("TitleOfMap", ""),
         "Area": area,
         "AreaWithConcern": f"{area}, {concern}" if area else concern,
-        "EmojiForConcern": written.get("EmojiForConcern", ""),
-        "ColorForConcern": written.get("ColorForConcern", ""),
+        "EmojiForConcern": _style_line(written.get("EmojiForConcern", ""), concern),
+        "ColorForConcern": _style_line(written.get("ColorForConcern", ""), concern),
     }
     return "\n".join(f"{key}: {values[key]}" for key in KEY_ORDER)
 

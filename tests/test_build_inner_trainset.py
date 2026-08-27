@@ -253,3 +253,41 @@ class TestRepairingTheConfirmation:
         chosen, reasons = select([drifted], repair_confirmation=False)
         assert not chosen
         assert reasons["reply_language"] == 1
+
+
+class TestTheStyleLinesCarryTheSameLabel:
+    """TRIDENT keys the colour and the emoji by the concern's name.
+
+    "AreaWithConcern: ..., Airports" with "EmojiForConcern: Airport, ✈️" does
+    not match, and the style is silently dropped at render time. The golden
+    model varies the label in 26.7% of rows — singular for plural, lower case
+    for title case — so the training data was reproducing the bug it was
+    meant to help remove. The glyph and the colour name come from the model;
+    the label comes from the seed, exactly as the area does.
+    """
+
+    def test_the_emoji_label_matches_the_concern(self) -> None:
+        target = build_target(row(inner_output=ACCEPTED["inner_output"].replace(
+            "EmojiForConcern: Airports, ✈️", "EmojiForConcern: Airport, ✈️")))
+        assert "EmojiForConcern: Airports, ✈️" in target
+
+    def test_the_colour_label_matches_the_concern(self) -> None:
+        target = build_target(row(inner_output=ACCEPTED["inner_output"].replace(
+            "ColorForConcern: Airports, lightblue",
+            "ColorForConcern: airport, lightblue")))
+        assert "ColorForConcern: Airports, lightblue" in target
+
+    def test_the_glyph_still_comes_from_the_model(self) -> None:
+        target = build_target(row(inner_output=ACCEPTED["inner_output"].replace(
+            "EmojiForConcern: Airports, ✈️", "EmojiForConcern: Airport, 🛬")))
+        assert "EmojiForConcern: Airports, 🛬" in target
+
+    def test_the_colour_name_still_comes_from_the_model(self) -> None:
+        target = build_target(row(inner_output=ACCEPTED["inner_output"].replace(
+            "ColorForConcern: Airports, lightblue", "ColorForConcern: Airports, teal")))
+        assert "ColorForConcern: Airports, teal" in target
+
+    def test_a_style_line_with_no_comma_is_left_as_the_seed_label(self) -> None:
+        target = build_target(row(inner_output=ACCEPTED["inner_output"].replace(
+            "EmojiForConcern: Airports, ✈️", "EmojiForConcern: ✈️")))
+        assert "EmojiForConcern: Airports, ✈️" in target

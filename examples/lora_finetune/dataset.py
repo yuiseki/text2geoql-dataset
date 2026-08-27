@@ -36,6 +36,33 @@ SYSTEM_PROMPT = (
 )
 
 
+# The inner layer's task is different in kind from the deep layer's: it reads a
+# human sentence and writes the intermediate language, rather than reading the
+# intermediate language and writing a query. Two things it measurably gets
+# wrong are named here, because a fine-tune is a chance to state them once
+# instead of carrying them in few-shot examples on every request.
+#
+#   The hierarchy. 41% of the golden model's readings name fewer levels than
+#   the validated seed does: "Higashi Ward, Niigata, Niigata Prefecture, Japan"
+#   comes back as "Higashi-ku, Niigata".
+#
+#   The language. It answers Japanese input in Korean or Chinese often enough
+#   to matter, which looks plausible and is not.
+INNER_SYSTEM_PROMPT = (
+    "You turn a human's request for a map into TRIDENT's intermediate language. "
+    "Reply with exactly these six lines and nothing else:\n"
+    "ConfirmHelpful: a short confirmation, in the same language the human wrote in\n"
+    "TitleOfMap: a title for the map\n"
+    "Area: the administrative area, smallest first, then each larger area "
+    "containing it, separated by commas\n"
+    "AreaWithConcern: the same area, then the thing being looked for\n"
+    "EmojiForConcern: the thing being looked for, then one emoji\n"
+    "ColorForConcern: the thing being looked for, then one colour name\n"
+    "Keep every level of the area the human named. Do not shorten "
+    "\"Chuo Ward, Niigata, Niigata Prefecture, Japan\" to \"Chuo, Niigata\"."
+)
+
+
 def requires_bf16(model_id: str) -> bool:
     """Return True if model_id needs bfloat16 for numerical stability.
 
@@ -76,10 +103,41 @@ def load_pairs(dataset_dir: str = DATASET_DIR) -> list[TrainingPair]:
     return list(iter_pairs(dataset_dir))
 
 
+def load_inner_pairs(path) -> list[TrainingPair]:
+    """Read the pairs `build_inner_trainset.py` wrote.
+
+    One JSON object per line with `input` (what the human said), `output`
+    (the intermediate language block) and the verdict it came from.
+    """
+    import json
+    from pathlib import Path as _Path
+
+    pairs: list[TrainingPair] = []
+    for line in _Path(path).read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not (row.get("input") or "").strip() or not (row.get("output") or "").strip():
+            continue
+        pairs.append(
+            TrainingPair(
+                input_text=row["input"].strip(),
+                output_text=row["output"].strip(),
+                source=row.get("verdict") or "inner",
+            )
+        )
+    return pairs
+
+
 def format_prompt(
     input_text: str,
     output_text: str | None = None,
     tokenizer=None,
+    system_prompt: str = SYSTEM_PROMPT,
 ) -> str:
     """Format a pair using the model's native chat template.
 
@@ -98,7 +156,7 @@ def format_prompt(
     """
     if tokenizer is not None:
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": input_text},
         ]
         if output_text is not None:
@@ -113,7 +171,7 @@ def format_prompt(
 
     # Fallback: hardcoded Qwen ChatML (backward compat / tests)
     messages = (
-        f"<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n"
+        f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
         f"<|im_start|>user\n{input_text}<|im_end|>\n"
         f"<|im_start|>assistant\n"
     )
@@ -128,6 +186,7 @@ def build_hf_dataset(
     val_ratio: float = 0.05,
     seed: int = 42,
     tokenizer=None,
+    system_prompt: str = SYSTEM_PROMPT,
 ):
     """Build a HuggingFace DatasetDict with train/validation splits.
 
@@ -139,7 +198,11 @@ def build_hf_dataset(
     """
     from datasets import Dataset, DatasetDict
 
-    texts = [format_prompt(p.input_text, p.output_text, tokenizer=tokenizer) for p in pairs]
+    texts = [
+        format_prompt(p.input_text, p.output_text, tokenizer=tokenizer,
+                      system_prompt=system_prompt)
+        for p in pairs
+    ]
     ds = Dataset.from_dict({"text": texts})
     split = ds.train_test_split(test_size=val_ratio, seed=seed)
     return DatasetDict({"train": split["train"], "validation": split["test"]})
