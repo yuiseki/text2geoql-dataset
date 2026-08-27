@@ -1,6 +1,9 @@
 """Tests for benchmark_inner.py — case set, scoring, and reporting."""
 
 from benchmark_inner import (
+    FIELD_CASES,
+    _has_japanese,
+    cases_for,
     INNER_CASES,
     InnerCase,
     build_past_messages,
@@ -164,3 +167,61 @@ class TestRendering:
         assert "gpu" in table
         assert "| a |" in table and "| b |" in table
         assert "4/10" in table and "10/10" in table
+
+
+class TestFieldCases:
+    def test_the_original_set_is_untouched(self) -> None:
+        # Every number in the findings so far was measured on these ten.
+        # Replacing them would make the before and after incomparable.
+        assert len(INNER_CASES) == 10
+        assert INNER_CASES[0] == InnerCase("Taito, Tokyo", "Cafes")
+
+    def test_the_field_set_carries_its_own_words(self) -> None:
+        # The template set asks "Show me {concern} in {area}" and nothing else.
+        # These are sentences somebody actually typed or said.
+        assert all(case.utterance for case in FIELD_CASES)
+
+    def test_every_case_records_where_it_came_from(self) -> None:
+        for case in FIELD_CASES:
+            assert case.source in ("recorded", "constructed")
+
+    def test_it_contains_japanese(self) -> None:
+        # The point of fine-tuning the inner layer. An English-only set
+        # cannot measure it.
+        assert any(_has_japanese(c.utterance or "") for c in FIELD_CASES)
+
+    def test_it_contains_a_four_level_area(self) -> None:
+        # Already the cause of two separate failures.
+        assert any(len(c.area.split(",")) >= 4 for c in FIELD_CASES)
+
+    def test_it_contains_a_concern_that_finds_nothing(self) -> None:
+        assert any(c.expect_empty for c in FIELD_CASES)
+
+    def test_it_contains_the_forms_the_geocoder_trips_on(self) -> None:
+        joined = " ".join(c.utterance or "" for c in FIELD_CASES)
+        assert "-ku" in joined or "区" in joined
+
+
+class TestBuildPastMessagesWithUtterance:
+    def test_uses_the_recorded_words_when_there_are_any(self) -> None:
+        case = InnerCase("Taito, Tokyo", "Soba noodle shops",
+                         utterance="台東区の蕎麦屋を表示して", source="recorded")
+        assert build_past_messages(case)[0] == "台東区の蕎麦屋を表示して"
+
+    def test_falls_back_to_the_template(self) -> None:
+        assert build_past_messages(InnerCase("Taito, Tokyo", "Cafes"))[0] == (
+            "Show me cafes in Taito, Tokyo"
+        )
+
+
+class TestCasesFor:
+    def test_template_is_the_default_and_is_the_frozen_ten(self) -> None:
+        assert cases_for("template") == INNER_CASES
+
+    def test_field_is_the_new_set(self) -> None:
+        assert cases_for("field") == FIELD_CASES
+
+    def test_both_keeps_the_frozen_ten_first(self) -> None:
+        combined = cases_for("both")
+        assert combined[: len(INNER_CASES)] == INNER_CASES
+        assert len(combined) == len(INNER_CASES) + len(FIELD_CASES)

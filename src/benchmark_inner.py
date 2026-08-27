@@ -75,10 +75,18 @@ REQUIRED_KEYS = (
 
 @dataclass(frozen=True)
 class InnerCase:
-    """One request, expressed as the area and concern the model must recover."""
+    """One request, expressed as the area and concern the model must recover.
+
+    `utterance` carries the words when they matter. The original ten are
+    templated from area and concern; the field set below is made of sentences
+    somebody actually wrote, which is a different thing to measure.
+    """
 
     area: str
     concern: str
+    utterance: str | None = None
+    source: str = "template"
+    expect_empty: bool = False
 
     @property
     def slug(self) -> str:
@@ -102,6 +110,66 @@ INNER_CASES: list[InnerCase] = [
 ]
 
 
+_JAPANESE = re.compile(r"[\u3040-\u30ff\u4e00-\u9fff]")
+
+
+def _has_japanese(text: str) -> bool:
+    return bool(_JAPANESE.search(text))
+
+
+# A second set, kept alongside the first rather than replacing it.
+#
+# The ten above ask "Show me {concern} in {area}" in English and nothing else.
+# Every figure in the findings rests on them, so they are frozen. But the
+# inner layer is being fine-tuned for Japanese and for area strings four
+# levels deep, and a set that contains neither cannot say whether that worked.
+#
+# recorded    words somebody actually typed or spoke, taken from the session
+#             memos and the pi5-deck voice tests. Small, but nobody's habits
+#             are in them except a real user's.
+# constructed written to cover a case the recorded ones miss. Each says why.
+FIELD_CASES: list[InnerCase] = [
+    # --- recorded -------------------------------------------------------
+    InnerCase("Taito, Tokyo", "Soba noodle shops",
+              "台東区の蕎麦屋を表示して", "recorded"),
+    InnerCase("Taito, Tokyo", "Cafes", "台東区を表示して", "recorded"),
+    InnerCase("Hiroshima", "Cafes", "広島のカフェを表示して", "recorded"),
+    InnerCase("Hiroshima", "Cafes", "広島市のカフェを表示して", "recorded"),
+    InnerCase("Kyoto", "Bakeries", "Find bakeries in Kyoto.", "recorded"),
+    InnerCase("Shibuya, Tokyo", "Bakeries",
+              "Show me bakeries in Shibuya, Tokyo", "recorded"),
+    InnerCase("Shinjuku, Tokyo", "Hotels",
+              "Show me hotels in Shinjuku, Tokyo.", "recorded"),
+    InnerCase("Hiroshima", "Cafes", "Show me cafes in Hiroshima City.", "recorded"),
+    InnerCase("Taito, Tokyo", "Cafes", "Show me cafes in Taito, Tokyo", "recorded"),
+
+    # --- constructed ----------------------------------------------------
+    # Four levels. Broke the generator twice: the seed resolves and the
+    # model's shorter reading does not.
+    InnerCase("Chuo Ward, Niigata, Niigata Prefecture, Japan", "Airports",
+              "新潟県新潟市中央区の空港を教えてください", "constructed",
+              expect_empty=True),
+    # The same place named the way a person writes it, with -ku.
+    InnerCase("Chuo Ward, Niigata, Niigata Prefecture, Japan", "Airports",
+              "chuo-ku niigata airports", "constructed", expect_empty=True),
+    # A concern that finds nothing where it is asked for. zero_results pairs
+    # are in the training set, so the ability has to be measured.
+    InnerCase("Taito, Tokyo", "Mosques", "台東区のモスクを教えて", "constructed",
+              expect_empty=True),
+    # An island group; the geocoder does not resolve the plural form.
+    InnerCase("Ogasawara, Tokyo, Japan", "Aquariums",
+              "小笠原諸島にある水族館を教えてください", "constructed",
+              expect_empty=True),
+    # Two wards whose names differ by one character. 西成区 is not 西区.
+    InnerCase("Nishinari Ward, Osaka, Osaka Prefecture, Japan", "Bakeries",
+              "西成区のパン屋さんを教えてください", "constructed"),
+    # Politeness and word order a template never produces.
+    InnerCase("Sapporo, Hokkaido", "Cafes", "札幌の喫茶店、どこかいいとこある？",
+              "constructed"),
+    InnerCase("Naha, Okinawa", "Hotels", "那覇 ホテル 一覧", "constructed"),
+]
+
+
 def build_past_messages(case: InnerCase) -> list[str]:
     """The conversation the inner layer sees: the human turn, then surface's reply.
 
@@ -109,7 +177,7 @@ def build_past_messages(case: InnerCase) -> list[str]:
     That keeps a surface failure from being scored against inner.
     """
     concern = case.concern.lower()
-    query = f"Show me {concern} in {case.area}"
+    query = case.utterance or f"Show me {concern} in {case.area}"
     reply = (
         "Ability: overpass-api\n"
         f"Reply: I copy. I'm generating maps that shows {concern} in {case.area} "
@@ -253,15 +321,24 @@ def render_markdown_table(reports: list[dict]) -> str:
     return header + "\n" + "\n".join(rows)
 
 
+def cases_for(name: str) -> list[InnerCase]:
+    if name == "field":
+        return FIELD_CASES
+    if name == "both":
+        return INNER_CASES + FIELD_CASES
+    return INNER_CASES
+
+
 def run(
     label: str,
     trident_url: str,
     *,
     timeout: float = DEFAULT_TIMEOUT,
     backend: str = "unspecified",
+    case_set: str = "template",
 ) -> dict:
     scores: list[InnerScore] = []
-    for index, case in enumerate(INNER_CASES):
+    for index, case in enumerate(cases_for(case_set)):
         error: str | None = None
         text = ""
         try:
@@ -278,6 +355,7 @@ def run(
     return {
         "label": label,
         "backend": backend,
+        "case_set": case_set,
         "trident_url": trident_url,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": summarize(scores),
@@ -293,6 +371,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--label", help="Name of the model behind TRIDENT's inner role")
     parser.add_argument("--trident-url", default=DEFAULT_TRIDENT_URL)
+    parser.add_argument(
+        "--set",
+        choices=("template", "field", "both"),
+        default="template",
+        help="template: the frozen ten every earlier figure was measured on. "
+        "field: recorded and constructed utterances, Japanese included. "
+        "Report both after fine-tuning; a drop on template means something broke.",
+    )
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
     parser.add_argument("--out-dir", default="tmp")
     parser.add_argument(
@@ -316,8 +402,15 @@ def main() -> None:
     if not args.label:
         parser.error("--label is required unless --compare is given")
 
-    print(f"Benchmarking inner layer: {args.label} via {args.trident_url}")
-    report = run(args.label, args.trident_url, timeout=args.timeout, backend=args.backend)
+    print(f"Benchmarking inner layer: {args.label} via {args.trident_url} "
+          f"[{args.set}, {len(cases_for(args.set))} cases]")
+    report = run(
+        args.label,
+        args.trident_url,
+        timeout=args.timeout,
+        backend=args.backend,
+        case_set=args.set,
+    )
 
     if not report["summary"]["valid"]:
         print("\nEvery request failed — this says nothing about the model.")
