@@ -744,6 +744,34 @@ def load_concerns(path: Path) -> list[str]:
     return names
 
 
+def completed_seeds(path: Path) -> set[tuple[str, str]]:
+    """Which seeds a partly written output file already covers.
+
+    A nine-hour run that dies at hour eight should resume, not restart, so
+    every pair is flushed as it is produced and read back here. The last line
+    of a killed run is usually half written; that line is skipped and the rest
+    still counts.
+    """
+    path = Path(path)
+    if not path.exists():
+        return set()
+    done: set[tuple[str, str]] = set()
+    with path.open() as handle:
+        for line in handle:
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            area, concern = row.get("seed_area"), row.get("seed_concern")
+            if area and concern:
+                done.add((area, concern))
+    return done
+
+
+def remaining_seeds(seeds: list[Seed], done: set[tuple[str, str]]) -> list[Seed]:
+    return [s for s in seeds if (s.area, s.concern) not in done]
+
+
 def build_seeds(concerns: list[str], areas: list[str], count: int) -> list[Seed]:
     """Walk both lists at once, so a short run still samples both dimensions.
 
@@ -788,6 +816,12 @@ def main() -> None:
     parser.add_argument("--variants", type=int, default=6)
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
     parser.add_argument("--out-dir", default="tmp")
+    parser.add_argument(
+        "--out",
+        default="",
+        help="Append to this file and skip seeds it already covers. Without "
+        "it each run writes a fresh timestamped file.",
+    )
     args = parser.parse_args()
 
     if args.seeds > 0:
@@ -798,9 +832,25 @@ def main() -> None:
               f"taking {len(seeds)} every {stride}")
     else:
         seeds = DEFAULT_SEEDS[: args.limit]
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if args.out:
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        done = completed_seeds(out_path)
+        if done:
+            before = len(seeds)
+            seeds = remaining_seeds(seeds, done)
+            print(f"resuming: {len(done)} seeds already in {out_path}, "
+                  f"{len(seeds)} of {before} left")
+    else:
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        out_path = out_dir / f"inner-pairs-{stamp}.jsonl"
+
     counts = Counts()
     results: list[PairResult] = []
     started = time.monotonic()
+    handle = out_path.open("a")
 
     for seed in seeds:
         print(f"\n### {seed.area} / {seed.concern}")
@@ -824,19 +874,16 @@ def main() -> None:
             )
             counts.record(result.verdict)
             results.append(result)
+            # Flushed per pair: a killed run keeps everything up to the kill.
+            handle.write(json.dumps(result.as_dict(), ensure_ascii=False) + "\n")
+            handle.flush()
             mark = " !" if result.suspicious else "  "
             print(
                 f"  {result.verdict:<11}{mark}{result.element_count:>6}  "
                 f"{result.utterance[:36]:<38} -> {result.area_with_concern[17:45]}"
             )
 
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    out_path = out_dir / f"inner-pairs-{stamp}.jsonl"
-    with out_path.open("w") as handle:
-        for result in results:
-            handle.write(json.dumps(result.as_dict(), ensure_ascii=False) + "\n")
+    handle.close()
 
     elapsed = time.monotonic() - started
     total = len(results)

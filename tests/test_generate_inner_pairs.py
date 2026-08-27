@@ -13,12 +13,14 @@ from generate_inner_pairs import (
     build_intermediate,
     build_area_searches,
     build_seeds,
+    completed_seeds,
     load_concerns,
     load_validated_seeds,
     name_forms,
     parse_trident_input,
     looks_like_leak,
     parse_utterances,
+    remaining_seeds,
     reverse_system_prompt,
 )
 
@@ -450,3 +452,46 @@ class TestJapaneseNameForms:
     def test_does_not_shorten_a_prefecture_to_something_ambiguous(self) -> None:
         # 京都府 -> 京都 is fine; it is the same place at a coarser level.
         assert "京都" in name_forms("京都府")
+
+
+class TestCompletedSeeds:
+    def test_reads_back_which_seeds_a_file_already_covers(self, tmp_path) -> None:
+        path = tmp_path / "pairs.jsonl"
+        path.write_text(
+            '{"seed_area": "Taito, Tokyo", "seed_concern": "Cafes"}\n'
+            '{"seed_area": "Taito, Tokyo", "seed_concern": "Cafes"}\n'
+            '{"seed_area": "Naha, Okinawa", "seed_concern": "Hotels"}\n'
+        )
+        assert completed_seeds(path) == {
+            ("Taito, Tokyo", "Cafes"),
+            ("Naha, Okinawa", "Hotels"),
+        }
+
+    def test_a_missing_file_covers_nothing(self, tmp_path) -> None:
+        assert completed_seeds(tmp_path / "nothing.jsonl") == set()
+
+    def test_a_half_written_last_line_does_not_stop_the_rest(self, tmp_path) -> None:
+        # A nine-hour run killed mid-write leaves a truncated line. Losing the
+        # other 4,000 pairs over it would defeat the point of resuming.
+        path = tmp_path / "pairs.jsonl"
+        path.write_text(
+            '{"seed_area": "Taito, Tokyo", "seed_concern": "Cafes"}\n'
+            '{"seed_area": "Naha, Oki'
+        )
+        assert completed_seeds(path) == {("Taito, Tokyo", "Cafes")}
+
+    def test_ignores_a_line_missing_its_seed(self, tmp_path) -> None:
+        path = tmp_path / "pairs.jsonl"
+        path.write_text('{"utterance": "orphan"}\n')
+        assert completed_seeds(path) == set()
+
+
+class TestRemainingSeeds:
+    def test_drops_the_ones_already_done(self) -> None:
+        seeds = [Seed("A", "Cafes"), Seed("B", "Parks"), Seed("C", "Bars")]
+        done = {("B", "Parks")}
+        assert [s.area for s in remaining_seeds(seeds, done)] == ["A", "C"]
+
+    def test_keeps_the_order(self) -> None:
+        seeds = [Seed("A", "x"), Seed("B", "y")]
+        assert remaining_seeds(seeds, set()) == seeds
