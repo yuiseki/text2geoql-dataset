@@ -11,6 +11,7 @@ from generate_inner_pairs import (
     area_matches,
     area_with_concern_line,
     build_intermediate,
+    broader_than_seed,
     build_area_searches,
     build_seeds,
     completed_seeds,
@@ -495,3 +496,41 @@ class TestRemainingSeeds:
     def test_keeps_the_order(self) -> None:
         seeds = [Seed("A", "x"), Seed("B", "y")]
         assert remaining_seeds(seeds, set()) == seeds
+
+
+class TestBroaderThanSeed:
+    SEED = Seed("Kyoto, Kyoto Prefecture, Japan", "Aquariums")
+
+    def test_recognises_a_containing_area_from_the_seed_chain(self) -> None:
+        # 「京都府にある水族館」 read as Kyoto Prefecture. The reading is right
+        # and the seed is the narrow one; the label should move, not the pair.
+        assert broader_than_seed("Kyoto Prefecture", self.SEED)
+
+    def test_recognises_the_country(self) -> None:
+        assert broader_than_seed("Japan", self.SEED)
+
+    def test_the_seed_area_itself_is_not_broader(self) -> None:
+        assert not broader_than_seed("Kyoto", self.SEED)
+
+    def test_a_place_outside_the_chain_is_not_broader(self) -> None:
+        # Osaka is elsewhere, not a level up.
+        assert not broader_than_seed("Osaka", self.SEED)
+
+    def test_ignores_case_and_spacing(self) -> None:
+        assert broader_than_seed("  kyoto prefecture ", self.SEED)
+
+    def test_a_single_level_seed_has_nothing_broader(self) -> None:
+        assert not broader_than_seed("Japan", Seed("Japan", "Castles"))
+
+
+class TestReverseSystemPromptContext:
+    def test_requires_enough_of_the_chain_to_disambiguate(self) -> None:
+        # "chuo-ku airports" resolves to Tokyo, not the Niigata ward it was
+        # generated from. Teaching the Niigata answer would be teaching the
+        # model to invent context that is not in the sentence.
+        prompt = reverse_system_prompt(8)
+        assert "a stranger to the region" in prompt
+        assert "chuo-ku" in prompt
+
+    def test_forbids_widening_as_well_as_narrowing(self) -> None:
+        assert "Do not widen it either" in reverse_system_prompt(8)

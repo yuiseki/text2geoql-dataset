@@ -105,6 +105,12 @@ REVERSE_SYSTEM_TEMPLATE = (
     "way it appears there. Do not translate it, do not use another name for "
     "it, and do not replace it with a landmark, a station or a district "
     "inside it. "
+    "Name enough of it that a stranger to the region could tell which place "
+    "is meant: if the Area line says a ward inside a city, write the city too. "
+    '"Chuo Ward" and "chuo-ku" alone are not enough, because several cities '
+    "have one. "
+    "Do not widen it either: if the Area line names a city, do not write the "
+    "prefecture instead. "
     "Never write an utterance that relies on where the person is standing: no "
     '"nearby", no "near me", no "this area", no "このあたり", no "近く". '
     "It MUST NOT contain the words Area, AreaWithConcern, Emoji, Color, or any "
@@ -336,6 +342,24 @@ def strip_area_suffix(name: str) -> str:
     return ", ".join(parts)
 
 
+def broader_than_seed(written: str, seed: Seed) -> bool:
+    """Whether a reading names a level above the seed rather than a wrong place.
+
+    「京都府にある水族館」 comes back as "Kyoto Prefecture" against a seed of
+    "Kyoto, Kyoto Prefecture, Japan". The reading is right and the utterance is
+    natural; the seed is simply narrower than what was said. Discarding the
+    pair throws away a good one, so it is separated here and the label is moved
+    to match the utterance when the training set is assembled.
+
+    Only the seed's own chain counts. Osaka is not a level above Kyoto.
+    """
+    target = _normalise(written)
+    if not target:
+        return False
+    outer = [_normalise(part) for part in seed.area_parts[1:]]
+    return target in outer
+
+
 def same_place(written: str, seed_area: str, resolve) -> bool:
     """Whether two area strings name the same administrative relation.
 
@@ -503,6 +527,7 @@ def _search_relation(params: dict[str, str]) -> int | None:
 @dataclass
 class Counts:
     accepted: int = 0
+    broader_than_seed: int = 0
     invented_name: int = 0
     deep_gap: int = 0
     zero_results: int = 0
@@ -640,6 +665,13 @@ def evaluate(
         # a person actually says.
         written_area = area_part(result.area_with_concern, seed)
         if not same_place(written_area, seed.area, resolve_area):
+            # A reading one level up is not a wrong place. The utterance said
+            # the wider thing, so the label belongs to the utterance, not the
+            # seed. Kept and relabelled when the training set is assembled.
+            if broader_than_seed(written_area, seed):
+                result.verdict = "broader_than_seed"
+                result.note = f"read as {written_area!r}, a level above the seed"
+                return result
             result.verdict = "wrong_area"
             result.note = f"read as {written_area!r}"
             return result
