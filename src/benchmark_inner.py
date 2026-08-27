@@ -53,7 +53,7 @@ from typing import Literal
 import glob
 import json
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -178,6 +178,29 @@ FIELD_CASES: list[InnerCase] = [
 PastMessageStyle = Literal["production", "with-reply"]
 
 
+# Places that appear nowhere in data/inner — neither as a seed area nor in a
+# generated utterance. The frozen sets stopped being able to measure
+# generalization once the pairs were generated from three of their areas.
+#
+# A fine-tune that learned the shape of a four-level hierarchy without
+# learning any geography writes a perfectly formed area with an invented
+# parent: "Hiroshima City, Tokyo, Japan". That scores as correct against a
+# prefix rule and returns nothing from Overpass. These cases are where that
+# shows up.
+UNSEEN_CASES: tuple[InnerCase, ...] = (
+    InnerCase("Matsuyama, Ehime", "Cafes", "Show me cafes in Matsuyama City.", "unseen"),
+    InnerCase("Kumamoto, Kumamoto", "Hotels", "Find hotels in Kumamoto City.", "unseen"),
+    InnerCase("Nagasaki, Nagasaki", "Museums", "Show me museums in Nagasaki City.", "unseen"),
+    InnerCase("Aomori, Aomori", "Parks", "List parks in Aomori City.", "unseen"),
+    InnerCase("Okayama, Okayama", "Libraries", "Show me libraries in Okayama City.", "unseen"),
+    InnerCase("松山市, 愛媛県", "Cafes", "松山市のカフェを表示して", "unseen"),
+    InnerCase("熊本市, 熊本県", "Restaurants", "熊本市のレストランを教えて", "unseen"),
+    InnerCase("富山市, 富山県", "Pharmacies", "富山市の薬局を探しています", "unseen"),
+    InnerCase("岐阜市, 岐阜県", "Schools", "岐阜市の学校を地図に出して", "unseen"),
+    InnerCase("秋田市, 秋田県", "Hospitals", "秋田市の病院はどこ", "unseen"),
+)
+
+
 def build_past_messages(
     case: InnerCase, *, style: PastMessageStyle = "production"
 ) -> list[str]:
@@ -218,11 +241,21 @@ class InnerScore:
     length: int
     area_with_concern: str
     error: str | None = None
+    # How many elements the deep layer's query returned, or None when it was
+    # never run. Kept apart from the format and content columns because it
+    # catches something neither can see: an area that is shaped correctly and
+    # names a place that does not contain the one before it.
+    elements: int | None = None
 
     @property
     def errored(self) -> bool:
         """The request never produced an answer, so there is nothing to grade."""
         return self.error is not None
+
+    @property
+    def returns_results(self) -> bool:
+        """The query built from this reply found something."""
+        return bool(self.elements)
 
     @property
     def good(self) -> bool:
@@ -293,6 +326,11 @@ def score_inner_output(text: str, case: InnerCase, *, error: str | None = None) 
     )
 
 
+def with_elements(score: InnerScore, elements: int | None) -> InnerScore:
+    """The same score, with the element count the query returned."""
+    return replace(score, elements=elements)
+
+
 def summarize(scores: list[InnerScore]) -> dict:
     answered = [s for s in scores if not s.errored]
     return {
@@ -307,6 +345,8 @@ def summarize(scores: list[InnerScore]) -> dict:
         "concern_ok": sum(1 for s in scores if s.concern_ok),
         "runaway": sum(1 for s in scores if s.runaway),
         "good": sum(1 for s in scores if s.good),
+        "returns_results": sum(1 for s in scores if s.returns_results),
+        "queries_run": sum(1 for s in scores if s.elements is not None),
     }
 
 
@@ -325,6 +365,37 @@ def ask_inner(
     )
     response.raise_for_status()
     return response.json().get("inner", "")
+
+
+def count_elements(
+    trident_url: str, line: str, *, overpass_url: str, timeout: float
+) -> int | None:
+    """Run one AreaWithConcern line the whole way and count what comes back.
+
+    Through TRIDENT's own deep endpoint, so the grounding and the prompt are
+    the ones production uses. None when the chain never produced a query,
+    which is a different thing from a query that found nothing.
+    """
+    if not line.strip():
+        return None
+    try:
+        deep = httpx.post(
+            f"{trident_url.rstrip('/')}/api/ai/deep",
+            json={"query": line},
+            timeout=timeout,
+        )
+        deep.raise_for_status()
+        query = (deep.json() or {}).get("deep") or ""
+        if "[out:" not in query:
+            return None
+        result = httpx.post(
+            overpass_url, data={"data": query}, timeout=timeout
+        )
+        result.raise_for_status()
+        return len((result.json() or {}).get("elements") or [])
+    except Exception:
+        # A failure to measure is not a failure of the answer.
+        return None
 
 
 def render_markdown_table(reports: list[dict]) -> str:
@@ -358,7 +429,32 @@ def render_markdown_table(reports: list[dict]) -> str:
     return header + "\n" + "\n".join(rows)
 
 
+def describe_commit(repo: "str | Path") -> str | None:
+    """The commit a repository is sitting on, or None if it cannot be read.
+
+    The prompt and the example selection live in TRIDENT, whose working tree
+    is shared with other agents. A commit that changed the few-shot examples
+    landed between two runs here and moved the numbers, and neither report
+    recorded it, so the difference looked like variance for an hour.
+    """
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except Exception:
+        return None
+    head = result.stdout.strip()
+    return head or None
+
+
 def cases_for(name: str) -> list[InnerCase]:
+    if name == "unseen":
+        return UNSEEN_CASES
     if name == "field":
         return FIELD_CASES
     if name == "both":
@@ -374,6 +470,8 @@ def run(
     backend: str = "unspecified",
     case_set: str = "template",
     style: PastMessageStyle = "production",
+    overpass_url: str | None = None,
+    trident_commit: str | None = None,
 ) -> dict:
     scores: list[InnerScore] = []
     for index, case in enumerate(cases_for(case_set)):
@@ -386,15 +484,28 @@ def run(
         except Exception as exc:  # a hang or a 500 is a result, not a crash
             error = f"{type(exc).__name__}: {exc}"
         score = score_inner_output(text, case, error=error)
+        if overpass_url and not score.errored:
+            score = with_elements(
+                score,
+                count_elements(
+                    trident_url,
+                    score.area_with_concern,
+                    overpass_url=overpass_url,
+                    timeout=timeout,
+                ),
+            )
         scores.append(score)
         verdict = "ERR" if score.errored else ("ok " if score.good else "BAD")
-        detail = score.error if score.errored else score.area_with_concern[:58]
-        print(f"  case {index} {verdict} {score.length:6d}ch | {detail}")
+        detail = score.error if score.errored else score.area_with_concern[:52]
+        found = "" if score.elements is None else f" [{score.elements}]"
+        print(f"  case {index} {verdict} {score.length:6d}ch | {detail}{found}")
     return {
         "label": label,
         "backend": backend,
         "case_set": case_set,
         "past_message_style": style,
+        "overpass_url": overpass_url,
+        "trident_commit": trident_commit,
         "trident_url": trident_url,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": summarize(scores),
@@ -412,7 +523,7 @@ def main() -> None:
     parser.add_argument("--trident-url", default=DEFAULT_TRIDENT_URL)
     parser.add_argument(
         "--set",
-        choices=("template", "field", "both"),
+        choices=("template", "field", "both", "unseen"),
         default="template",
         help="template: the frozen ten every earlier figure was measured on. "
         "field: recorded and constructed utterances, Japanese included. "
@@ -431,6 +542,24 @@ def main() -> None:
         ),
     )
     parser.add_argument("--out-dir", default="tmp")
+    parser.add_argument(
+        "--trident-repo",
+        default="../TRIDENT",
+        help=(
+            "Path to the TRIDENT checkout being measured. Its commit is "
+            "recorded in the report, because the prompt lives there and the "
+            "tree is shared."
+        ),
+    )
+    parser.add_argument(
+        "--overpass-url",
+        help=(
+            "Run each answer through TRIDENT's deep endpoint and this Overpass "
+            "instance, and report how many found results. Catches an area that "
+            "is shaped correctly and names a parent that does not contain the "
+            "place, which the prefix rule passes. Slow; off by default."
+        ),
+    )
     parser.add_argument(
         "--backend",
         default="unspecified",
@@ -461,6 +590,8 @@ def main() -> None:
         backend=args.backend,
         case_set=args.set,
         style=args.style,
+        overpass_url=args.overpass_url,
+        trident_commit=describe_commit(args.trident_repo) if args.trident_repo else None,
     )
 
     if not report["summary"]["valid"]:

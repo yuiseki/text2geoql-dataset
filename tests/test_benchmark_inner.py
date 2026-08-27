@@ -1,6 +1,9 @@
 """Tests for benchmark_inner.py — case set, scoring, and reporting."""
 
 from benchmark_inner import (
+    describe_commit,
+    with_elements,
+    UNSEEN_CASES,
     FIELD_CASES,
     _has_japanese,
     cases_for,
@@ -294,3 +297,126 @@ class TestTheFormatProductionActuallySends:
     def test_production_is_the_default(self) -> None:
         case = InnerCase("Taito, Tokyo", "Cafes")
         assert build_past_messages(case) == build_past_messages(case, style="production")
+
+
+class TestTheUnseenSet:
+    """Places that appear nowhere in the training data.
+
+    The frozen sets cannot measure generalization any more: three of their
+    four-level cases name areas the pairs were generated from, and one field
+    case's utterance is in the training file verbatim. A fine-tune that
+    learned the shape of a hierarchy without learning any geography scores
+    well on those and badly here, which is the distinction worth measuring.
+
+    Checked against data/inner at the time of writing: none of Matsuyama,
+    Kumamoto, Nagasaki, Aomori, Toyama, Okayama, Gifu, Nara, Akita or
+    Hiroshima occurs in a seed area or an utterance.
+    """
+
+    def test_it_has_ten_cases(self) -> None:
+        assert len(UNSEEN_CASES) == 10
+
+    def test_every_case_is_unique(self) -> None:
+        assert len({c.slug for c in UNSEEN_CASES}) == len(UNSEEN_CASES)
+
+    def test_it_mixes_japanese_and_english(self) -> None:
+        japanese = [c for c in UNSEEN_CASES if any(ord(ch) > 0x3000 for ch in c.utterance or "")]
+        assert 3 <= len(japanese) <= 7
+
+    def test_every_case_names_a_city(self) -> None:
+        # The demo's shape: a municipality, which is where the parent gets
+        # invented. A prefecture-level case would not exercise it.
+        for case in UNSEEN_CASES:
+            assert case.area
+
+    def test_none_of_its_areas_are_in_the_frozen_sets(self) -> None:
+        frozen = {c.area for c in INNER_CASES + FIELD_CASES}
+        assert not ({c.area for c in UNSEEN_CASES} & frozen)
+
+    def test_cases_for_can_select_it(self) -> None:
+        assert cases_for("unseen") == UNSEEN_CASES
+
+    def test_it_is_not_folded_into_both(self) -> None:
+        # "both" is the frozen pair; the unseen set is reported separately so
+        # a number measured on it is never mistaken for one of those.
+        assert cases_for("both") == INNER_CASES + FIELD_CASES
+
+
+class TestReturningRealResults:
+    """The column that catches an invented parent.
+
+    "Hiroshima City, Tokyo, Japan" is a perfectly formed four-level area and
+    passes the prefix rule, because the prefix is right. Intersected, it
+    returns nothing. Scoring cannot see that without running the query, which
+    is the third of the three checks the work promises: resolving place
+    names, checking tag validity, and confirming that queries return real
+    results.
+
+    The prefix rule is left alone. This is a separate column, so every figure
+    measured before it stays comparable.
+    """
+
+    def test_a_score_starts_with_the_query_unrun(self) -> None:
+        s = score_inner_output("AreaWithConcern: Taito, Tokyo, Cafes", TAITO_CAFES)
+        assert s.elements is None
+
+    def test_elements_found_marks_the_answer_real(self) -> None:
+        s = score_inner_output("AreaWithConcern: Taito, Tokyo, Cafes", TAITO_CAFES)
+        assert with_elements(s, 368).returns_results
+
+    def test_no_elements_marks_it_empty(self) -> None:
+        s = score_inner_output("AreaWithConcern: Taito, Tokyo, Cafes", TAITO_CAFES)
+        assert not with_elements(s, 0).returns_results
+
+    def test_an_unrun_query_is_not_counted_either_way(self) -> None:
+        s = score_inner_output("AreaWithConcern: Taito, Tokyo, Cafes", TAITO_CAFES)
+        assert not s.returns_results
+
+    def test_the_prefix_rule_is_untouched_by_the_new_column(self) -> None:
+        # An invented parent still passes area_ok; that is the point of
+        # measuring the query separately rather than tightening the rule.
+        case = InnerCase("Hiroshima City", "Cafes")
+        s = score_inner_output(
+            "AreaWithConcern: Hiroshima City, Tokyo, Japan, Cafes", case
+        )
+        assert s.area_ok
+        assert not with_elements(s, 0).returns_results
+
+    def test_the_summary_counts_the_column(self) -> None:
+        good = with_elements(
+            score_inner_output("AreaWithConcern: Taito, Tokyo, Cafes", TAITO_CAFES), 368
+        )
+        empty = with_elements(
+            score_inner_output("AreaWithConcern: Taito, Tokyo, Cafes", TAITO_CAFES), 0
+        )
+        assert summarize([good, empty])["returns_results"] == 1
+
+
+class TestRecordingWhatWasMeasured:
+    """Every report says which TRIDENT it was measured against.
+
+    The prompt lives in TRIDENT, not here, and TRIDENT's working tree is
+    shared with other agents. A commit that changed the few-shot examples
+    landed between two of these runs and moved the numbers; nothing in either
+    report said so, and the difference read as model variance for an hour.
+    """
+
+    def test_it_reports_the_commit_of_a_repository(self, tmp_path) -> None:
+        import subprocess
+
+        subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+        (tmp_path / "f.txt").write_text("x")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+        subprocess.run(
+            ["git", "-c", "user.email=t@t", "-c", "user.name=t",
+             "commit", "-qm", "one"],
+            cwd=tmp_path, check=True,
+        )
+        head = describe_commit(tmp_path)
+        assert head and len(head) >= 7
+
+    def test_a_path_that_is_not_a_repository_reports_nothing(self, tmp_path) -> None:
+        assert describe_commit(tmp_path / "nowhere") is None
+
+    def test_it_never_raises(self) -> None:
+        assert describe_commit("/definitely/not/here") is None
