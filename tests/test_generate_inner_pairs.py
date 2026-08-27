@@ -7,6 +7,7 @@ from generate_inner_pairs import (
     is_suspicious,
     same_place,
     strip_area_suffix,
+    utterance_names_place,
     area_matches,
     area_with_concern_line,
     build_intermediate,
@@ -14,6 +15,7 @@ from generate_inner_pairs import (
     build_seeds,
     load_concerns,
     load_validated_seeds,
+    name_forms,
     parse_trident_input,
     looks_like_leak,
     parse_utterances,
@@ -398,3 +400,53 @@ class TestReverseSystemPromptGrounding:
         prompt = reverse_system_prompt(8)
         for phrase in ["nearby", "near me", "this area", "このあたり"]:
             assert phrase in prompt
+
+
+class TestUtteranceNamesThePlace:
+    NAMES = {"磯子区", "Isogo Ward", "Isogo"}
+
+    def test_accepts_the_official_name(self) -> None:
+        assert utterance_names_place("磯子区の喫茶店を教えて", self.NAMES)
+
+    def test_accepts_the_english_name(self) -> None:
+        assert utterance_names_place("Show me cafes in Isogo Ward", self.NAMES)
+        assert utterance_names_place("cafes in isogo", self.NAMES)
+
+    def test_rejects_a_typo(self) -> None:
+        # 磯谷 is a real place in Hokkaido. Teaching 磯谷区 = Isogo, Yokohama
+        # would put a false mapping into the data, not robustness to typos.
+        assert not utterance_names_place("磯谷区の喫茶店を教えて", self.NAMES)
+
+    def test_rejects_a_translation_the_map_does_not_use(self) -> None:
+        assert not utterance_names_place("ソウル北エリアの宿", {"강북구", "Gangbuk-gu"})
+
+    def test_accepts_a_longer_form_that_contains_the_name(self) -> None:
+        assert utterance_names_place("新潟市中央区にある空港はどこですか", {"中央区", "Chuo Ward"})
+
+    def test_without_known_names_it_cannot_judge_and_says_so(self) -> None:
+        # No names means the geocoder failed, not that the utterance is good.
+        assert not utterance_names_place("anything", set())
+
+
+class TestJapaneseNameForms:
+    def test_allows_the_municipal_suffix_to_be_dropped(self) -> None:
+        # OSM records 小金井市; people write 小金井.
+        assert "小金井" in name_forms("小金井市")
+        assert "磯子" in name_forms("磯子区")
+
+    def test_keeps_the_full_form_too(self) -> None:
+        assert "小金井市" in name_forms("小金井市")
+
+    def test_refuses_to_shorten_a_name_to_one_character(self) -> None:
+        # 港区 would become 港, which appears in 空港, 港町 and most harbours.
+        assert name_forms("港区") == {"港区"}
+
+    def test_leaves_a_name_without_a_suffix_alone(self) -> None:
+        assert name_forms("渋谷") == {"渋谷"}
+
+    def test_handles_the_english_suffixes_as_before(self) -> None:
+        assert "Isogo" in name_forms("Isogo Ward")
+
+    def test_does_not_shorten_a_prefecture_to_something_ambiguous(self) -> None:
+        # 京都府 -> 京都 is fine; it is the same place at a coarser level.
+        assert "京都" in name_forms("京都府")

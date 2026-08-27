@@ -98,7 +98,7 @@ REVERSE_SYSTEM_TEMPLATE = (
     "You are given the assistant's internal map definition. "
     "Output EXACTLY {n} utterances as a JSON array of {n} objects, each "
     '{{"lang":"ja"|"en","utterance":"..."}}. Count them before you answer. '
-    "Exactly half must be Japanese and half English. "
+    "Every utterance must be in {lang_name}. "
     "Each utterance must be what an ordinary person would type into a map app, "
     "and each must differ from the others in wording, length and politeness. "
     "Every utterance MUST name the place from the Area line, spelled the same "
@@ -112,8 +112,13 @@ REVERSE_SYSTEM_TEMPLATE = (
 )
 
 
-def reverse_system_prompt(variants: int) -> str:
-    return REVERSE_SYSTEM_TEMPLATE.format(n=variants)
+LANG_NAMES = {"ja": "Japanese", "en": "English"}
+
+
+def reverse_system_prompt(variants: int, lang: str = "ja") -> str:
+    return REVERSE_SYSTEM_TEMPLATE.format(
+        n=variants, lang_name=LANG_NAMES.get(lang, "Japanese")
+    )
 
 
 @dataclass(frozen=True)
@@ -391,6 +396,82 @@ def area_part(area_with_concern: str, seed: Seed) -> str:
     return ", ".join(parts[:take])
 
 
+# What OSM itself calls the place, in every language it records. The check
+# that a generated utterance names a real place rests on these.
+_NAME_KEYS = ("name", "name:en", "name:ja", "name:ko", "official_name", "alt_name")
+
+
+# OSM records 小金井市 and 磯子区; people write 小金井 and 磯子. Dropping the
+# suffix has to stop before the name becomes a common word: 港区 shortened to
+# 港 would match 空港 and every harbour in the sentence.
+_JA_SUFFIXES = ("都", "道", "府", "県", "市", "区", "町", "村", "郡")
+_MIN_JA_STEM = 2
+
+
+def name_forms(name: str) -> set[str]:
+    """A place name and the shorter forms a person might write instead."""
+    cleaned = (name or "").strip()
+    if not cleaned:
+        return set()
+    forms = {cleaned}
+
+    english = strip_area_suffix(cleaned)
+    if english and english != cleaned:
+        forms.add(english)
+
+    if cleaned[-1] in _JA_SUFFIXES:
+        stem = cleaned[:-1]
+        if len(stem) >= _MIN_JA_STEM:
+            forms.add(stem)
+    return forms
+
+
+def official_names(relation_id: int) -> set[str]:
+    """Every name OSM records for a relation, plus the bare English form.
+
+    "Isogo Ward" is what the map says; "Isogo" is what a person writes. Both
+    have to count, or every English utterance is rejected.
+    """
+    try:
+        response = httpx.get(
+            "https://nominatim.yuiseki.net/lookup",
+            params={"osm_ids": f"R{relation_id}", "format": "jsonv2", "namedetails": 1},
+            timeout=60,
+        )
+        if not response.is_success:
+            return set()
+        payload = response.json()
+    except Exception:
+        return set()
+    if not payload:
+        return set()
+    details = payload[0].get("namedetails") or {}
+
+    names: set[str] = set()
+    for key in _NAME_KEYS:
+        if details.get(key):
+            names |= name_forms(details[key])
+    return {n for n in names if n}
+
+
+def utterance_names_place(utterance: str, names: set[str]) -> bool:
+    """Whether the utterance actually contains one of the place's names.
+
+    The teacher invents place names. It wrote 磯谷区 for 磯子区 and
+    "ソウル北エリア" for 강북구, and both survived every other check because
+    the inner layer read through the mistake and produced the right area. The
+    label was right and the utterance was wrong, which is the shape of a pair
+    that teaches a false name.
+
+    With no names to compare against, the answer is no: an unverifiable
+    utterance is not a verified one.
+    """
+    if not names:
+        return False
+    lowered = (utterance or "").lower()
+    return any(name.lower() in lowered for name in names)
+
+
 def resolve_area(name: str) -> int | None:
     """Resolve an area string to an OSM relation, trying each shape in turn."""
     for params in build_area_searches(name):
@@ -422,6 +503,7 @@ def _search_relation(params: dict[str, str]) -> int | None:
 @dataclass
 class Counts:
     accepted: int = 0
+    invented_name: int = 0
     deep_gap: int = 0
     zero_results: int = 0
     wrong_area: int = 0
@@ -442,20 +524,39 @@ def _post(url: str, payload: dict, timeout: float) -> dict:
 
 
 def reverse_generate(
-    seed: Seed, variants: int, *, timeout: float = DEFAULT_TIMEOUT
+    seed: Seed, variants: int, *, lang: str = "ja", timeout: float = DEFAULT_TIMEOUT
 ) -> list[dict[str, str]]:
-    """Ask the teacher what a person would have typed to get this label."""
+    """Ask the teacher what a person would have typed to get this label.
+
+    One language per call. Asked for both at once it returned seven English
+    utterances and no Japanese, however the split was worded.
+    """
     payload = {
         "model": "gvt-llm",
         "temperature": 0.9,
         "max_tokens": 120 * variants + 300,
         "messages": [
-            {"role": "system", "content": reverse_system_prompt(variants)},
+            {"role": "system", "content": reverse_system_prompt(variants, lang)},
             {"role": "user", "content": build_intermediate(seed)},
         ],
     }
     reply = _post(TEACHER_URL, payload, timeout)["choices"][0]["message"]["content"]
-    return dedupe(parse_utterances(reply))[:variants]
+    items = [i | {"lang": lang} for i in parse_utterances(reply)]
+    return dedupe(items)[:variants]
+
+
+def reverse_generate_both(
+    seed: Seed, variants: int, *, timeout: float = DEFAULT_TIMEOUT
+) -> list[dict[str, str]]:
+    """Half in each language, generated separately so the split holds."""
+    half = max(variants // 2, 1)
+    out = []
+    for lang in ("ja", "en"):
+        try:
+            out.extend(reverse_generate(seed, half, lang=lang, timeout=timeout))
+        except Exception as error:
+            print(f"  {lang} generation failed: {error}")
+    return out
 
 
 def ask_inner(utterance: str, *, timeout: float = DEFAULT_TIMEOUT) -> str:
@@ -500,6 +601,7 @@ def evaluate(
     item: dict[str, str],
     *,
     seed_count: int = 0,
+    seed_names: set[str] | None = None,
     timeout: float = DEFAULT_TIMEOUT,
 ) -> PairResult:
     """Take one reconstructed utterance as far as it will go."""
@@ -513,6 +615,16 @@ def evaluate(
     if looks_like_leak(result.utterance):
         result.verdict = "leaked"
         result.note = "utterance repeats the internal format"
+        return result
+
+    # Before anything else: does the utterance name a place that exists? The
+    # inner layer reads through a misspelling and produces the right area, so
+    # every later check passes and a false name enters the data.
+    if seed_names is not None and not utterance_names_place(
+        result.utterance, seed_names
+    ):
+        result.verdict = "invented_name"
+        result.note = f"none of {sorted(seed_names)[:3]} appear"
         return result
 
     try:
@@ -693,15 +805,23 @@ def main() -> None:
     for seed in seeds:
         print(f"\n### {seed.area} / {seed.concern}")
         try:
-            items = reverse_generate(seed, args.variants, timeout=args.timeout)
+            items = reverse_generate_both(seed, args.variants, timeout=args.timeout)
         except Exception as error:
             print(f"  reverse generation failed: {error}")
             continue
         seed_count = seed_control_count(seed, timeout=args.timeout)
+        seed_relation = resolve_area(seed.area)
+        seed_names = official_names(seed_relation) if seed_relation else set()
         print(f"  seed concern finds {seed_count}; {len(items)} utterances kept "
               f"of {args.variants} asked for")
         for item in items:
-            result = evaluate(seed, item, seed_count=seed_count, timeout=args.timeout)
+            result = evaluate(
+                seed,
+                item,
+                seed_count=seed_count,
+                seed_names=seed_names,
+                timeout=args.timeout,
+            )
             counts.record(result.verdict)
             results.append(result)
             mark = " !" if result.suspicious else "  "
