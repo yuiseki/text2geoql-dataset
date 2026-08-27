@@ -225,3 +225,44 @@ class TestCasesFor:
         combined = cases_for("both")
         assert combined[: len(INNER_CASES)] == INNER_CASES
         assert len(combined) == len(INNER_CASES) + len(FIELD_CASES)
+
+
+class TestTheYardstickItself:
+    """Two ways the scorer was wrong about the system it measures.
+
+    Both were found by measuring: the demo query resolved to the right area
+    and the right element count while the scorer called it a failure.
+    """
+
+    def test_an_accented_concern_still_counts(self) -> None:
+        # Qwen3-0.6B writes "Cafés". Fed to the deep layer that produces
+        # amenity=cafe and the correct area ids, so the accent changes
+        # nothing downstream and must not be scored as a wrong answer.
+        case = InnerCase(area="Taito, Tokyo", concern="Cafes")
+        text = "AreaWithConcern: Taito, Tokyo, Cafés"
+        assert score_inner_output(text, case).concern_ok
+
+    def test_an_accented_area_still_counts(self) -> None:
+        case = InnerCase(area="Kyoto, Kyoto", concern="Restaurants")
+        text = "AreaWithConcern: Kyōto, Kyoto, Restaurants"
+        assert score_inner_output(text, case).area_ok
+
+    def test_a_wrong_concern_is_still_wrong(self) -> None:
+        # The relaxation must not swallow a substituted concern.
+        case = InnerCase(area="Taito, Tokyo", concern="Cafes")
+        assert not score_inner_output(
+            "AreaWithConcern: Taito, Tokyo, Ramen shops", case
+        ).concern_ok
+
+    def test_the_demo_query_expects_the_city_not_the_prefecture(self) -> None:
+        # "Show me cafes in Hiroshima City." The suffix is what lets the
+        # geocoding ladder pick admin_level 7 (area 3604097196, 123 cafes).
+        # Expecting the bare name scored dropping the suffix as correct.
+        demo = [c for c in FIELD_CASES if c.utterance == "Show me cafes in Hiroshima City."]
+        assert len(demo) == 1
+        assert demo[0].area == "Hiroshima City"
+
+    def test_the_japanese_city_form_expects_the_city_too(self) -> None:
+        demo = [c for c in FIELD_CASES if c.utterance == "広島市のカフェを表示して"]
+        assert len(demo) == 1
+        assert demo[0].area == "広島市"

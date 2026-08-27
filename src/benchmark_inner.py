@@ -48,6 +48,7 @@ Output:
 from __future__ import annotations
 
 import argparse
+import unicodedata
 import glob
 import json
 import re
@@ -134,13 +135,16 @@ FIELD_CASES: list[InnerCase] = [
               "台東区の蕎麦屋を表示して", "recorded"),
     InnerCase("Taito, Tokyo", "Cafes", "台東区を表示して", "recorded"),
     InnerCase("Hiroshima", "Cafes", "広島のカフェを表示して", "recorded"),
-    InnerCase("Hiroshima", "Cafes", "広島市のカフェを表示して", "recorded"),
+    InnerCase("広島市", "Cafes", "広島市のカフェを表示して", "recorded"),
     InnerCase("Kyoto", "Bakeries", "Find bakeries in Kyoto.", "recorded"),
     InnerCase("Shibuya, Tokyo", "Bakeries",
               "Show me bakeries in Shibuya, Tokyo", "recorded"),
     InnerCase("Shinjuku, Tokyo", "Hotels",
               "Show me hotels in Shinjuku, Tokyo.", "recorded"),
-    InnerCase("Hiroshima", "Cafes", "Show me cafes in Hiroshima City.", "recorded"),
+    # The suffix is what lets the geocoding ladder ask for a settlement rather
+    # than take Nominatim's best guess, which is the prefecture. Preserved, it
+    # resolves to area 3604097196 (admin_level 7) and finds 123 cafes.
+    InnerCase("Hiroshima City", "Cafes", "Show me cafes in Hiroshima City.", "recorded"),
     InnerCase("Taito, Tokyo", "Cafes", "Show me cafes in Taito, Tokyo", "recorded"),
 
     # --- constructed ----------------------------------------------------
@@ -223,14 +227,26 @@ def _area_with_concern_line(text: str) -> str:
     return ""
 
 
+def _fold(text: str) -> str:
+    """Lowercase and drop accents.
+
+    Qwen3-0.6B writes "Cafés" where the examples write "Cafes". Fed straight
+    to the deep layer that still produces amenity=cafe and the correct area
+    ids, so the accent changes nothing downstream. Scoring it as a wrong
+    answer measured the scorer's strictness, not the model's.
+    """
+    stripped = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in stripped if not unicodedata.combining(c)).lower()
+
+
 def _concern_matches(written: str, expected: str) -> bool:
     """Plural and singular both count; "Pharmacies" may come back as "Pharmacy"."""
-    stem = expected.lower()
+    stem = _fold(expected)
     if stem.endswith("ies"):
         stem = stem[:-3]  # pharmacies -> pharmac, matching pharmacy too
     elif stem.endswith("s"):
         stem = stem[:-1]
-    return stem in written.lower()
+    return stem in _fold(written)
 
 
 def score_inner_output(text: str, case: InnerCase, *, error: str | None = None) -> InnerScore:
@@ -244,8 +260,8 @@ def score_inner_output(text: str, case: InnerCase, *, error: str | None = None) 
     line = _area_with_concern_line(text)
     body = re.sub(r"^AreaWithConcern\s*:?\s*", "", line).strip()
 
-    expected_area = [part.strip().lower() for part in case.area.split(",")]
-    written = [part.strip().lower() for part in body.split(",")]
+    expected_area = [_fold(part.strip()) for part in case.area.split(",")]
+    written = [_fold(part.strip()) for part in body.split(",")]
 
     return InnerScore(
         case=case.slug,
