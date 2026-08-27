@@ -191,13 +191,26 @@ APERTUS_MODELS: dict[str, GgufModelSpec] = {
 }
 MODEL_GROUPS["apertus"] = list(APERTUS_MODELS.keys())
 
+# Our own fine-tuned models, published as GGUF. Served the same way as APERTUS_MODELS.
+# Useful with --llama-server-url to benchmark edge hardware (e.g. a Raspberry Pi 4
+# k3s node) while the harness itself runs on a workstation.
+TRIDENT_MODELS: dict[str, GgufModelSpec] = {
+    "trident-deep-v4.2-0.5b": GgufModelSpec(
+        hf_repo="yuiseki/qwen2.5-coder-0.5b-trident-deep-v4.2-gguf", quant="Q4_K_M",
+    ),
+}
+MODEL_GROUPS["trident"] = list(TRIDENT_MODELS.keys())
+
+# Every model served by llama-server rather than Ollama.
+GGUF_MODELS: dict[str, GgufModelSpec] = {**APERTUS_MODELS, **TRIDENT_MODELS}
+
 DEFAULT_GROUP = "qwen2.5-coder"
 DEFAULT_MODELS = MODEL_GROUPS[DEFAULT_GROUP]
 
 
 def _model_backend(model: str) -> str:
     """Return "llama_server" for GGUF/Apertus models, "ollama" for everything else."""
-    return "llama_server" if model in APERTUS_MODELS else "ollama"
+    return "llama_server" if model in GGUF_MODELS else "ollama"
 
 # Fixed evaluation set: diverse TRIDENT instructions
 EVAL_INSTRUCTIONS = [
@@ -397,6 +410,7 @@ def run_benchmark(
     think: bool | None = None,
     num_ctx: int | None = None,
     skip_unavailable: bool = True,
+    llama_server_url: str | None = None,
 ) -> dict:
     if models is None:
         models = DEFAULT_MODELS
@@ -413,6 +427,7 @@ def run_benchmark(
         "query_timeout_s": query_timeout,
         "think": think,
         "instructions": EVAL_INSTRUCTIONS,
+        "llama_server_url": llama_server_url,
         "models": [],
     }
 
@@ -420,7 +435,9 @@ def run_benchmark(
         backend = _model_backend(model)
 
         if backend == "llama_server":
-            if skip_unavailable and not is_llama_server_available():
+            # With a remote server the binary lives on the other host, so the
+            # local PATH check does not apply.
+            if llama_server_url is None and skip_unavailable and not is_llama_server_available():
                 print(f"[SKIP] {model} — llama-server binary not found on PATH")
                 continue
         else:
@@ -446,8 +463,12 @@ def run_benchmark(
         )
 
         try:
-            if backend == "llama_server":
-                spec = APERTUS_MODELS[model]
+            if backend == "llama_server" and llama_server_url is not None:
+                # Server already running elsewhere (e.g. on a Raspberry Pi node);
+                # the caller is responsible for having loaded the matching model.
+                model_report = _probe_model(**probe_kwargs, base_url=llama_server_url)
+            elif backend == "llama_server":
+                spec = GGUF_MODELS[model]
                 log_path = os.path.join(tmp_dir, f"llama-server-{model_to_slug(model)}.log")
                 # One server launch serves all EVAL_INSTRUCTIONS x trials queries
                 # for this model before shutting down.
@@ -516,6 +537,11 @@ def main() -> None:
         help="Override context window size (e.g. 32768). Default: model's built-in default."
     )
     parser.add_argument(
+        "--llama-server-url", default=None, metavar="URL",
+        help="Benchmark against an already-running llama-server (e.g. http://192.168.100.101:8080) "
+             "instead of launching one locally. Only affects GGUF-backed models."
+    )
+    parser.add_argument(
         "--include-unavailable", action="store_true",
         help="Attempt models not yet pulled locally (will error)"
     )
@@ -543,6 +569,7 @@ def main() -> None:
         think=think,
         num_ctx=args.num_ctx,
         skip_unavailable=not args.include_unavailable,
+        llama_server_url=args.llama_server_url,
     )
 
 
