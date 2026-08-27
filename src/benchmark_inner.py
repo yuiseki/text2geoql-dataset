@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import unicodedata
+from typing import Literal
 import glob
 import json
 import re
@@ -174,14 +175,28 @@ FIELD_CASES: list[InnerCase] = [
 ]
 
 
-def build_past_messages(case: InnerCase) -> list[str]:
-    """The conversation the inner layer sees: the human turn, then surface's reply.
+PastMessageStyle = Literal["production", "with-reply"]
 
-    Surface is not under test here, so its reply is fixed rather than generated.
-    That keeps a surface failure from being scored against inner.
+
+def build_past_messages(
+    case: InnerCase, *, style: PastMessageStyle = "production"
+) -> list[str]:
+    """The conversation the inner layer sees.
+
+    "production" is what the browser sends. /api/ai/surface returns `history`
+    as the prior turns plus the query and never appends its own reply, so the
+    first turn arrives as one human utterance. Appending a fixed surface reply
+    built a prompt the system never builds, and a longer one: the inner layer
+    answers faster without it.
+
+    "with-reply" keeps the two-element form the earlier reports were measured
+    with, so those numbers stay reproducible. Every report records which style
+    produced it; do not compare across styles.
     """
     concern = case.concern.lower()
     query = case.utterance or f"Show me {concern} in {case.area}"
+    if style == "production":
+        return [query]
     reply = (
         "Ability: overpass-api\n"
         f"Reply: I copy. I'm generating maps that shows {concern} in {case.area} "
@@ -295,11 +310,17 @@ def summarize(scores: list[InnerScore]) -> dict:
     }
 
 
-def ask_inner(trident_url: str, case: InnerCase, *, timeout: float = DEFAULT_TIMEOUT) -> str:
+def ask_inner(
+    trident_url: str,
+    case: InnerCase,
+    *,
+    timeout: float = DEFAULT_TIMEOUT,
+    style: PastMessageStyle = "production",
+) -> str:
     """POST one case to TRIDENT's inner endpoint and return the raw reply."""
     response = httpx.post(
         f"{trident_url.rstrip('/')}/api/ai/inner",
-        json={"pastMessages": build_past_messages(case)},
+        json={"pastMessages": build_past_messages(case, style=style)},
         timeout=timeout,
     )
     response.raise_for_status()
@@ -352,13 +373,14 @@ def run(
     timeout: float = DEFAULT_TIMEOUT,
     backend: str = "unspecified",
     case_set: str = "template",
+    style: PastMessageStyle = "production",
 ) -> dict:
     scores: list[InnerScore] = []
     for index, case in enumerate(cases_for(case_set)):
         error: str | None = None
         text = ""
         try:
-            text = ask_inner(trident_url, case, timeout=timeout)
+            text = ask_inner(trident_url, case, timeout=timeout, style=style)
             if not text.strip():
                 error = "empty reply"
         except Exception as exc:  # a hang or a 500 is a result, not a crash
@@ -372,6 +394,7 @@ def run(
         "label": label,
         "backend": backend,
         "case_set": case_set,
+        "past_message_style": style,
         "trident_url": trident_url,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": summarize(scores),
@@ -396,6 +419,17 @@ def main() -> None:
         "Report both after fine-tuning; a drop on template means something broke.",
     )
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
+    parser.add_argument(
+        "--format",
+        dest="style",
+        choices=("production", "with-reply"),
+        default="production",
+        help=(
+            "What to put in pastMessages. 'production' is the single utterance "
+            "the browser sends; 'with-reply' appends a fixed surface reply, as "
+            "the reports before 2026-08-28 did. Never compare across the two."
+        ),
+    )
     parser.add_argument("--out-dir", default="tmp")
     parser.add_argument(
         "--backend",
@@ -419,13 +453,14 @@ def main() -> None:
         parser.error("--label is required unless --compare is given")
 
     print(f"Benchmarking inner layer: {args.label} via {args.trident_url} "
-          f"[{args.set}, {len(cases_for(args.set))} cases]")
+          f"[{args.set}, {len(cases_for(args.set))} cases, {args.style} format]")
     report = run(
         args.label,
         args.trident_url,
         timeout=args.timeout,
         backend=args.backend,
         case_set=args.set,
+        style=args.style,
     )
 
     if not report["summary"]["valid"]:

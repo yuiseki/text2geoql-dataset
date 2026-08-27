@@ -39,13 +39,13 @@ class TestCaseSet:
 
 class TestBuildPastMessages:
     def test_produces_the_user_turn_and_the_surface_reply(self) -> None:
-        messages = build_past_messages(TAITO_CAFES)
+        messages = build_past_messages(TAITO_CAFES, style="with-reply")
         assert len(messages) == 2
         assert messages[0] == "Show me cafes in Taito, Tokyo"
         assert messages[1].startswith("Ability: overpass-api")
 
     def test_mentions_the_concern_and_area_in_the_surface_reply(self) -> None:
-        reply = build_past_messages(TAITO_CAFES)[1]
+        reply = build_past_messages(TAITO_CAFES, style="with-reply")[1]
         assert "cafes" in reply
         assert "Taito, Tokyo" in reply
 
@@ -266,3 +266,31 @@ class TestTheYardstickItself:
         demo = [c for c in FIELD_CASES if c.utterance == "広島市のカフェを表示して"]
         assert len(demo) == 1
         assert demo[0].area == "広島市"
+
+
+class TestTheFormatProductionActuallySends:
+    """The browser sends one element, not two.
+
+    /api/ai/surface returns `history` as the prior turns plus the query. It
+    never appends its own reply, so the first turn reaches the inner layer as
+    a single human utterance. Measuring with a fixed surface reply appended
+    was measuring a prompt the system never builds.
+    """
+
+    def test_production_sends_the_utterance_alone(self) -> None:
+        case = InnerCase("Taito, Tokyo", "Cafes")
+        assert build_past_messages(case, style="production") == [
+            "Show me cafes in Taito, Tokyo"
+        ]
+
+    def test_production_keeps_the_recorded_words(self) -> None:
+        case = InnerCase("Taito, Tokyo", "Cafes", "台東区を表示して", "recorded")
+        assert build_past_messages(case, style="production") == ["台東区を表示して"]
+
+    def test_with_reply_is_still_available_for_the_older_numbers(self) -> None:
+        case = InnerCase("Taito, Tokyo", "Cafes")
+        assert len(build_past_messages(case, style="with-reply")) == 2
+
+    def test_production_is_the_default(self) -> None:
+        case = InnerCase("Taito, Tokyo", "Cafes")
+        assert build_past_messages(case) == build_past_messages(case, style="production")
