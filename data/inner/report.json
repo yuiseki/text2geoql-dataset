@@ -1,0 +1,68 @@
+{
+  "record": "tmp/inner-pairs-production.jsonl",
+  "rows_read": 7892,
+  "pairs": {
+    "n": 5875,
+    "by_lang": {
+      "ja": 2482,
+      "en": 3393
+    },
+    "by_levels": {
+      "1": 9,
+      "2": 320,
+      "3": 3260,
+      "4": 2286
+    },
+    "by_verdict": {
+      "zero_results": 199,
+      "accepted": 5418,
+      "deep_gap": 258
+    }
+  },
+  "train": {
+    "n": 5601,
+    "by_lang": {
+      "ja": 2364,
+      "en": 3237
+    },
+    "by_levels": {
+      "1": 8,
+      "2": 306,
+      "3": 3108,
+      "4": 2179
+    },
+    "by_verdict": {
+      "zero_results": 186,
+      "accepted": 5165,
+      "deep_gap": 250
+    }
+  },
+  "valid": {
+    "n": 274,
+    "by_lang": {
+      "en": 156,
+      "ja": 118
+    },
+    "by_levels": {
+      "1": 1,
+      "2": 14,
+      "3": 152,
+      "4": 107
+    },
+    "by_verdict": {
+      "zero_results": 13,
+      "accepted": 253,
+      "deep_gap": 8
+    }
+  },
+  "dropped": {
+    "invented_name": 745,
+    "wrong_area": 714,
+    "deep_gap_unfaithful": 362,
+    "no_area_line": 179,
+    "incomplete_block": 11,
+    "duplicate": 3,
+    "failed": 3
+  },
+  "confirmation_repaired": 1188
+}
