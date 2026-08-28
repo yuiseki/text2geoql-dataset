@@ -178,6 +178,16 @@ FIELD_CASES: list[InnerCase] = [
 PastMessageStyle = Literal["production", "with-reply"]
 
 
+# The expected area is the full hierarchy, verified against Nominatim rather
+# than written from memory: 松山市, 愛媛県, 日本. A two-level expectation would
+# mark the answer that works as wrong — "Hiroshima City, Hiroshima Prefecture,
+# Japan" is what returns 123 cafes, and "Hiroshima, Hiroshima" is what returns
+# the prefecture's 288.
+#
+# area_ok is still a prefix rule, so it stays strict about a missing level and
+# lenient about an invented one. Read this set's area column next to
+# returns_results, which is what catches a parent that contains nothing.
+#
 # Places that appear nowhere in data/inner — neither as a seed area nor in a
 # generated utterance. The frozen sets stopped being able to measure
 # generalization once the pairs were generated from three of their areas.
@@ -188,16 +198,21 @@ PastMessageStyle = Literal["production", "with-reply"]
 # prefix rule and returns nothing from Overpass. These cases are where that
 # shows up.
 UNSEEN_CASES: tuple[InnerCase, ...] = (
-    InnerCase("Matsuyama, Ehime", "Cafes", "Show me cafes in Matsuyama City.", "unseen"),
-    InnerCase("Kumamoto, Kumamoto", "Hotels", "Find hotels in Kumamoto City.", "unseen"),
-    InnerCase("Nagasaki, Nagasaki", "Museums", "Show me museums in Nagasaki City.", "unseen"),
-    InnerCase("Aomori, Aomori", "Parks", "List parks in Aomori City.", "unseen"),
-    InnerCase("Okayama, Okayama", "Libraries", "Show me libraries in Okayama City.", "unseen"),
-    InnerCase("松山市, 愛媛県", "Cafes", "松山市のカフェを表示して", "unseen"),
-    InnerCase("熊本市, 熊本県", "Restaurants", "熊本市のレストランを教えて", "unseen"),
-    InnerCase("富山市, 富山県", "Pharmacies", "富山市の薬局を探しています", "unseen"),
-    InnerCase("岐阜市, 岐阜県", "Schools", "岐阜市の学校を地図に出して", "unseen"),
-    InnerCase("秋田市, 秋田県", "Hospitals", "秋田市の病院はどこ", "unseen"),
+    InnerCase("Matsuyama City, Ehime Prefecture, Japan", "Cafes",
+              "Show me cafes in Matsuyama City.", "unseen"),
+    InnerCase("Kumamoto City, Kumamoto Prefecture, Japan", "Hotels",
+              "Find hotels in Kumamoto City.", "unseen"),
+    InnerCase("Nagasaki City, Nagasaki Prefecture, Japan", "Museums",
+              "Show me museums in Nagasaki City.", "unseen"),
+    InnerCase("Aomori City, Aomori Prefecture, Japan", "Parks",
+              "List parks in Aomori City.", "unseen"),
+    InnerCase("Okayama City, Okayama Prefecture, Japan", "Libraries",
+              "Show me libraries in Okayama City.", "unseen"),
+    InnerCase("松山市, 愛媛県, 日本", "Cafes", "松山市のカフェを表示して", "unseen"),
+    InnerCase("熊本市, 熊本県, 日本", "Restaurants", "熊本市のレストランを教えて", "unseen"),
+    InnerCase("富山市, 富山県, 日本", "Pharmacies", "富山市の薬局を探しています", "unseen"),
+    InnerCase("岐阜市, 岐阜県, 日本", "Schools", "岐阜市の学校を地図に出して", "unseen"),
+    InnerCase("秋田市, 秋田県, 日本", "Hospitals", "秋田市の病院はどこ", "unseen"),
 )
 
 
