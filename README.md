@@ -254,3 +254,23 @@ uv run python src/benchmark_models.py --models qwen3:8b --no-think --trials 3
 ```
 
 LoRA fine-tuning code (PEFT + TRL, no Unsloth) lives in [`examples/lora_finetune/`](examples/lora_finetune/README.md). Adapters are evaluated against guaranteed-nonempty pairs verified via the public Overpass API.
+
+---
+
+## Licence
+
+The code in this repository is MIT. See [`LICENSE`](LICENSE).
+
+Everything under [`data/`](data/) is ODbL-1.0, not MIT. See [`data/LICENSE`](data/LICENSE).
+Those files are a Derivative Database of OpenStreetMap: place names are resolved
+against Nominatim, tags are validated against Taginfo, and every query is executed
+against an Overpass API instance to confirm it returns real OSM elements.
+
+    (c) OpenStreetMap contributors, available under the Open Database License.
+
+The same data is published on the Hub as
+[`yuiseki/text2geoql`](https://huggingface.co/datasets/yuiseki/text2geoql) under ODbL-1.0.
+
+The fine-tuned model
+[`yuiseki/qwen2.5-coder-0.5b-trident-deep-v4.2-gguf`](https://huggingface.co/yuiseki/qwen2.5-coder-0.5b-trident-deep-v4.2-gguf)
+is Apache-2.0, inherited from its base model `Qwen/Qwen2.5-Coder-0.5B-Instruct`.
