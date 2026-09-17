@@ -1,6 +1,6 @@
-ollama
-langchain
-langchain_chroma
-langchain_community
 datasets
 httpx
+langchain
+langchain-chroma
+langchain-ollama
+ollama
