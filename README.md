@@ -89,7 +89,7 @@ python examples/lora_finetune/eval_guaranteed_nonempty.py --adapter models/qwen2
 
 ```
 TRIDENT AreaWithConcern instruction
-  → Few-Shot prompt  (semantic similarity via LangChain + Chroma + nomic-embed-text)
+  → Few-Shot prompt  (semantic similarity via LangChain in-memory vector store + nomic-embed-text)
   → Local LLM        (Ollama — deterministic, temp=0.01)
   → OverpassQL extraction + line-count check
   → Public Overpass API validation  (must return ≥ 1 element)

@@ -18,7 +18,7 @@ OverpassQL は OSM のタグ体系（`amenity=cafe`、`tourism=hotel` など）�
 
 ## 決定
 
-**ローカル LLM（Ollama）+ LangChain Chroma による意味的類似 Few-Shot プロンプティング**を採用する。
+**ローカル LLM（Ollama）+ LangChain のインメモリベクトルストアによる意味的類似 Few-Shot プロンプティング**を採用する。
 
 ### プロンプト構造
 
@@ -54,7 +54,7 @@ Output:
 
 ### Few-Shot 例の選択戦略
 
-`SemanticSimilarityExampleSelector`（LangChain）+ `Chroma` ベクトルストアを使用：
+`SemanticSimilarityExampleSelector`（LangChain）+ `InMemoryVectorStore` を使用：
 
 1. `filter_type`（AreaWithConcern / Area / SubArea）が一致するもののみ候補とする
 2. `filter_concern`（Cafes / Hotels 等）が一致するもの優先
@@ -62,6 +62,14 @@ Output:
 4. 残りを意味的近傍ベクトルで上位 4 件に絞る
 
 埋め込みモデル: `nomic-embed-text:v1.5`（Ollama 経由）
+
+ベクトルストアは `build_prompt()` の呼び出しごとに新しく作り、呼び出しが終われば捨てる。永続化しない。1 回の呼び出しで投入する例は、実データで中央値 60 件・最大 258 件（上記 1〜3 の絞り込み後）であり、そこから上位 4 件を取るだけなので、インデックスを張る規模ではない。
+
+当初は `Chroma` を使っていたが、以下の理由で `langchain-core` 同梱の `InMemoryVectorStore` に置き換えた（2026-09-17）：
+
+- 永続化していないため、ChromaDB の本来の価値（永続化・HNSW インデックス・サーバーモード）を一切使っていなかった
+- `Chroma("langchain_store", embeddings)` はプロセス内で共有されるデフォルトクライアントの同名コレクションを参照するため、1 プロセスで `build_prompt()` を複数回呼ぶと前回の例が残留した。`batch_generate.py` と `benchmark_models.py` はどちらもループ内で呼ぶため、2 件目以降は関心事の絞り込みを通過していない例が Few-Shot に混入しうる状態だった
+- 依存パッケージが 119 → 76 に減り、chromadb 由来の未修正の脆弱性（critical 2 / high 2）が解消した
 
 ### 生成後の検証
 
@@ -89,7 +97,7 @@ parts = response["response"].split("```")
 - `think=off`（`qwen3:8b`）で ~4.3 秒/クエリという実用的な速度
 
 **ネガティブ：**
-- Few-Shot 例のロードに Chroma + Ollama 埋め込みモデルが必要（オーバーヘッド）
+- Few-Shot 例のロードに Ollama 埋め込みモデルが必要（オーバーヘッド）
 - 例が少ない新しい関心事では品質が低下する（コールドスタート問題）
 - プロンプトが長くなる（最大 4 例 × 10 行 = 40 行）ため、小型モデルのコンテキスト枠を圧迫する
 

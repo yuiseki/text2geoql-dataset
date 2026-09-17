@@ -5,6 +5,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from generate_overpassql import (
+    PROMPT_PREFIX,
+    build_prompt,
     example_matches,
     generate_overpassql,
     generate_overpassql_llama_server,
@@ -174,3 +176,150 @@ class TestSaveOverpassql:
         meta = _make_meta()
         saved = save_overpassql(self.QUERY, str(base), meta, tmp_root=str(tmp_path / "tmp"))
         assert saved.endswith(f"output-{meta.model_slug}.overpassql")
+
+
+class _FakeEmbeddings:
+    """Deterministic embeddings: one axis per keyword, so similarity is checkable by hand.
+
+    Chroma and InMemoryVectorStore both talk to an embedding model through
+    embed_documents/embed_query only, so a fake here exercises the real
+    selector path without Ollama.
+    """
+
+    KEYWORDS = ("cafe", "hotel", "museum", "shrine")
+
+    def _vector(self, text: str) -> list[float]:
+        lowered = text.lower()
+        return [1.0 if word in lowered else 0.0 for word in self.KEYWORDS]
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [self._vector(text) for text in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._vector(text)
+
+
+class TestBuildPrompt:
+    """build_prompt picks the k nearest examples through the vector store."""
+
+    CONCERNS = ("Cafes", "Hotels", "Museums", "Shrines")
+
+    def _make_data_dir(self, tmp_path: Path) -> str:
+        for index, concern in enumerate(self.CONCERNS):
+            entry = tmp_path / f"entry{index}"
+            entry.mkdir()
+            instruct = f"AreaWithConcern: Taito, Tokyo, Japan; {concern}"
+            (entry / "input-trident.txt").write_text(instruct)
+            (entry / "output-test.overpassql").write_text(f"// query for {concern}")
+        return str(tmp_path)
+
+    def test_includes_the_matching_example(self, tmp_path: Path) -> None:
+        data_dir = self._make_data_dir(tmp_path)
+        with patch("generate_overpassql.OllamaEmbeddings", return_value=_FakeEmbeddings()):
+            prompt = build_prompt("AreaWithConcern: Shibuya, Tokyo, Japan; Cafes", data_dir)
+
+        assert "// query for Cafes" in prompt
+
+    def test_excludes_examples_of_other_concerns(self, tmp_path: Path) -> None:
+        data_dir = self._make_data_dir(tmp_path)
+        with patch("generate_overpassql.OllamaEmbeddings", return_value=_FakeEmbeddings()):
+            prompt = build_prompt("AreaWithConcern: Shibuya, Tokyo, Japan; Cafes", data_dir)
+
+        for concern in ("Hotels", "Museums", "Shrines"):
+            assert f"// query for {concern}" not in prompt
+
+    def test_keeps_the_question_and_the_prefix(self, tmp_path: Path) -> None:
+        data_dir = self._make_data_dir(tmp_path)
+        instruct = "AreaWithConcern: Shibuya, Tokyo, Japan; Cafes"
+        with patch("generate_overpassql.OllamaEmbeddings", return_value=_FakeEmbeddings()):
+            prompt = build_prompt(instruct, data_dir)
+
+        assert prompt.startswith(PROMPT_PREFIX)
+        assert prompt.rstrip().endswith(f"Input:\n{instruct}\n\nOutput:")
+
+    def test_no_matching_example_still_builds_a_prompt(self, tmp_path: Path) -> None:
+        data_dir = self._make_data_dir(tmp_path)
+        instruct = "AreaWithConcern: Shibuya, Tokyo, Japan; Aquariums"
+        with patch("generate_overpassql.OllamaEmbeddings", return_value=_FakeEmbeddings()):
+            prompt = build_prompt(instruct, data_dir)
+
+        assert prompt.startswith(PROMPT_PREFIX)
+        assert instruct in prompt
+
+
+class _RankingEmbeddings:
+    """One axis per word of the query, so nearness is decided by word overlap.
+
+    The axes are chosen so cosine and L2 rank these examples identically —
+    the assertions hold whichever metric the vector store defaults to.
+    """
+
+    AXES = ("shibuya", "tokyo", "japan", "asia", "cafes")
+
+    def _vector(self, text: str) -> list[float]:
+        lowered = text.lower()
+        return [1.0 if word in lowered else 0.0 for word in self.AXES]
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [self._vector(text) for text in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._vector(text)
+
+
+class TestBuildPromptRanking:
+    """The k=4 nearest of five candidates, all of which pass the concern filter."""
+
+    QUESTION = "AreaWithConcern: Shibuya, Tokyo, Japan; Cafes"
+    EXAMPLES = (
+        ("AreaWithConcern: Shibuya, Tokyo, Japan; Cafes", "// nearest"),
+        ("AreaWithConcern: Taito, Tokyo, Japan; Cafes", "// second"),
+        ("AreaWithConcern: Osaka, Japan; Cafes", "// third"),
+        ("AreaWithConcern: Paris, France; Cafes", "// fourth"),
+        ("AreaWithConcern: Seoul, South Korea; Cafes", "// farthest, somewhere in asia"),
+    )
+
+    def _make_data_dir(self, tmp_path: Path) -> str:
+        for index, (instruct, query) in enumerate(self.EXAMPLES):
+            entry = tmp_path / f"entry{index}"
+            entry.mkdir()
+            (entry / "input-trident.txt").write_text(instruct)
+            (entry / "output-test.overpassql").write_text(query)
+        return str(tmp_path)
+
+    def test_keeps_the_four_nearest_and_drops_the_farthest(self, tmp_path: Path) -> None:
+        data_dir = self._make_data_dir(tmp_path)
+        with patch("generate_overpassql.OllamaEmbeddings", return_value=_RankingEmbeddings()):
+            prompt = build_prompt(self.QUESTION, data_dir)
+
+        for kept in ("// nearest", "// second", "// third", "// fourth"):
+            assert kept in prompt
+        assert "// farthest" not in prompt
+
+
+class TestBuildPromptIsolation:
+    """Two calls in one process must not share examples.
+
+    batch_generate and benchmark_models both call build_prompt in a loop, so a
+    store that survives the call would mix concerns across entries.
+    """
+
+    def _make_data_dir(self, tmp_path: Path) -> str:
+        for index, (concern, query) in enumerate((("Cafes", "// cafe"), ("Hotels", "// hotel"))):
+            entry = tmp_path / f"entry{index}"
+            entry.mkdir()
+            (entry / "input-trident.txt").write_text(
+                f"AreaWithConcern: Taito, Tokyo, Japan; {concern}"
+            )
+            (entry / "output-test.overpassql").write_text(query)
+        return str(tmp_path)
+
+    def test_second_call_does_not_see_the_first_call_examples(self, tmp_path: Path) -> None:
+        data_dir = self._make_data_dir(tmp_path)
+        with patch("generate_overpassql.OllamaEmbeddings", return_value=_FakeEmbeddings()):
+            first = build_prompt("AreaWithConcern: Shibuya, Tokyo, Japan; Cafes", data_dir)
+            second = build_prompt("AreaWithConcern: Shibuya, Tokyo, Japan; Hotels", data_dir)
+
+        assert "// cafe" in first and "// hotel" not in first
+        assert "// hotel" in second
+        assert "// cafe" not in second

@@ -6,10 +6,10 @@ import sys
 
 import httpx
 import ollama
-from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
+from langchain_core.vectorstores import InMemoryVectorStore
 
 from meta import GenerationMeta, FailureMeta, model_to_slug
 from overpass import fetch_elements
@@ -113,7 +113,10 @@ def load_examples_for_instruct(
 def build_prompt(instruct: str, data_dir: str) -> str:
     """Build a few-shot prompt for the given TRIDENT instruction."""
     embeddings = OllamaEmbeddings(model=EMBED_MODEL)
-    vectorstore = Chroma("langchain_store", embeddings)
+    # A fresh store per call: the examples are filtered per instruction, so a
+    # store that outlives the call would carry the previous instruction's
+    # examples into this one.
+    vectorstore = InMemoryVectorStore(embeddings)
     example_selector = SemanticSimilarityExampleSelector(vectorstore=vectorstore, k=4)
 
     load_examples_for_instruct(

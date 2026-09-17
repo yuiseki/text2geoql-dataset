@@ -1,6 +1,5 @@
 datasets
 httpx
 langchain
-langchain-chroma
 langchain-ollama
 ollama
